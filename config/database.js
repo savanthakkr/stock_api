@@ -14,11 +14,16 @@ require('dotenv').config();
 //   dialect: 'mysql',
 // });
 
+const DB_NAME = 'btmukq4qu1oumphyrovw';
+const DB_USER = 'u9p8lonwjkadtikq';
+const DB_PASSWORD = '4xztBzx1fSsq8qt9PhV2';
+const DB_HOST = 'btmukq4qu1oumphyrovw-mysql.services.clever-cloud.com';
 
-const DB_NAME = 'stock_market';
-const DB_USER = 'root';
-const DB_PASSWORD = '';
-const DB_HOST = 'localhost';
+
+// const DB_NAME = 'stock_market';
+// const DB_USER = 'root';
+// const DB_PASSWORD = '';
+// const DB_HOST = 'localhost';
 
 // Set up the Sequelize instance
 const sequelize = new Sequelize(DB_NAME, DB_USER, DB_PASSWORD, {
