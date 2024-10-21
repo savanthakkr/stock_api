@@ -520,6 +520,162 @@ const fetchUserWallet = async (req, res) => {
   }
 };
 
+const phonepeCallback = async (req, res) => {
+  const paymentResponse = req.body;
+
+  console.log('Payment response received:', paymentResponse);
+
+  // Check the status of the transaction
+  const { status, transactionId, error } = paymentResponse;
+
+  if (status === 'SUCCESS') {
+    // Handle successful payment
+    console.log(`Payment successful for transaction: ${transactionId}`);
+    // You can update your database or notify the user here
+  } else {
+    // Handle failed payment
+    console.error(`Payment failed with error: ${error}`);
+    // You can update the status in your database or retry the payment
+  }
+
+  // Send a response back to PhonePe acknowledging the callback
+  res.status(200).json({
+    message: 'Payment callback received',
+  });
+};
+
+const fetchHomeData = async (req, res) => {
+  try {
+    const homeData = await sequelize.query(
+      `SELECT * FROM stocks ORDER BY id DESC`,
+      {
+        replacements: [],
+        type: QueryTypes.SELECT
+      }
+    );
+
+    if (homeData.length > 0) {
+      let closedCount = 0;
+      let totalDays = 0;
+      let totalReturns = 0;
+
+      await Promise.all(homeData.map(async (stock) => {
+        const yahooUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${stock.cname}`; // Assuming stock.cname holds the stock symbol like RELIANCE.BO
+        try {
+          const response = await axios.get(yahooUrl);
+          const result = response.data.chart.result[0];
+          const regularMarketPrice = result.meta.regularMarketPrice;
+          const regularMarketTime = result.meta.regularMarketTime;
+
+          // Convert regularMarketTime (timestamp) to dd-MM-yyyy format
+          const marketDate = new Date(regularMarketTime * 1000); // Convert from seconds to milliseconds
+
+          // Price calculations
+          const stockPer = Number(stock.down_upto) * 0.0025;
+          const sprice = Number(stock.down_upto) - stockPer;
+          const eprice = Number(stock.down_upto) + stockPer;
+          const avgPrice = (sprice + eprice) / 2;
+
+          const differenceTarget = Number(stock.traget1) - avgPrice;
+
+          const differperc = (differenceTarget / 100) * 100;
+
+          console.log(differperc);
+
+          // Check if the regularMarketPrice is greater than or equal to target1
+          if (regularMarketPrice >= stock.traget1) {
+            closedCount += 1;
+
+            // Convert posting_date to Date object
+            const postingDateParts = stock.posting_date.split('-');
+            const postingDate = new Date(postingDateParts[2], postingDateParts[1] - 1, postingDateParts[0]);
+
+            // Calculate days difference
+            const daysDifference = Math.ceil((marketDate - postingDate) / (1000 * 60 * 60 * 24));
+            totalDays += daysDifference;
+            const annualReturn = (differperc / daysDifference) * 365;
+            totalReturns += annualReturn;
+          }
+        } catch (error) {
+          console.error(`Failed to fetch market data for ${stock.cname}`, error);
+        }
+      }));
+
+      // Avoid division by zero and calculate average days
+      const srate = (closedCount / homeData.length) * 100;
+      const tDays = closedCount > 0 ? (totalDays / closedCount) : 0;
+      const tReturn = totalReturns / closedCount;
+
+      // Prepare the response data
+      const allData = {
+        totalStocks: homeData.length,
+        exitStocks: closedCount,
+        successRate: srate,
+        avgDays: tDays,
+        annualReturn: tReturn
+      };
+
+      return res.status(200).json({ error: false, message: 'Data Fetch', HomeData: allData });
+    } else {
+      const allData = {
+        totalStocks: 0,
+        exitStocks: 0,
+        successRate: 0,
+        avgDays: 0,
+        annualReturn: 0
+      };
+      return res.status(400).json({ error: true, message: 'Data not found', HomeData: allData });
+    }
+  } catch (error) {
+    console.error('Error fetching home data:', error);
+    return res.status(500).json({ error: true, message: 'Internal server error' });
+  }
+};
+
+
+const adminlogin = async (req, res) => {
+  try {
+    const { email,password } = req.body;
+
+    const [existingUser] = await sequelize.query('SELECT * FROM admin WHERE email = ? AND password = ? AND status = ?',
+      { replacements: [email,password,'0'], type: QueryTypes.SELECT });
+    if (existingUser) {
+      return res.status(200).send({ error: false, message: 'Login success!', Login: existingUser });
+    } else {
+      return res.status(404).send({ error: true, message: 'Email or Password is wrong!' });
+    }
+
+    
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({
+      message: 'Error in login check api!',
+      error
+    });
+  }
+};
+
+const fetchAllUsers = async (req, res) => {
+  try {
+
+    const productList = await sequelize.query('SELECT * FROM users WHERE type = ? ORDER BY id DESC',
+      { replacements: ['1'], type: QueryTypes.SELECT }); 
+
+    if(productList.length > 0){
+      return res.status(200).send({ error: false, message: 'Data Fetch Successfully', Users: productList });
+    } else {
+      return res.status(404).send({ error: true, message: 'Data not found', Users: [] });
+    }
+
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({
+      message: 'Data not found',
+      error: true
+    });
+  }
+};
+
 const upstockLogin = async (req,res) => {
     const apiKey = 'dab9535d-e4e9-4a9d-8249-f8280fb01741'; // Your Upstox API Key
     const redirectUri = 'http://localhost:3304/api/callback'; // Ensure this matches the registered redirect URI
@@ -645,6 +801,7 @@ const fetchUpStocksData = async (req, res) => {
   }
 };
 
+
 module.exports = {
   checkMobileExist,
   registerUser,
@@ -659,5 +816,9 @@ module.exports = {
   fetchAllUserPlan,
   upstockLogin,
   upstockCallback,
-  fetchUpStocksData
+  fetchUpStocksData,
+  phonepeCallback,
+  fetchHomeData,
+  adminlogin,
+  fetchAllUsers
 };

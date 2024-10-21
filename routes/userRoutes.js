@@ -4,7 +4,7 @@ const userController = require('../controllers/userController');
 const { verifyToken } = require("../middlewares/roleMiddleware");
 
 const {checkMobileExist,registerUser,addStock,fetchAllStocks,fetchActiveStocks,buyPlan,checkUserPlan,fetchUserWallet,fetchAllUserPlan,
-    fetchHomeStocks,upstockLogin,upstockCallback,fetchUpStocksData } = userController; 
+    fetchHomeStocks,upstockLogin,upstockCallback,fetchUpStocksData,phonepeCallback,fetchHomeData,adminlogin,fetchAllUsers } = userController; 
 
 router.post('/checkMobileExist', checkMobileExist);
 router.post('/registerUser', registerUser);
@@ -20,5 +20,9 @@ router.get('/fetchHomeStocks', fetchHomeStocks);
 router.get('/fetchUpStocksData', fetchUpStocksData);
 router.get('/upstockLogin',upstockLogin);
 router.get('/callback',upstockCallback);
+router.post('/phonepeCallback', phonepeCallback);
+router.get('/fetchHomeData',fetchHomeData);
+router.post('/adminlogin', adminlogin);
+router.get('/fetchAllUsers',fetchAllUsers);
 
 module.exports = router;
