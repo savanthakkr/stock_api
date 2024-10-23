@@ -209,14 +209,45 @@ const registerUser = async (req, res) => {
   }
 };
 
+const fetchStockByName = async (req, res) => {
+  try {
+    // Fetch stocks from your database
+    const { stock_name } = req.body;
+
+    const yahooUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${stock_name}`; // Assuming stock.symbol holds the stock symbol like RELIANCE.BO
+      try {
+        const response = await axios.get(yahooUrl);
+        return res.status(200).send({ 
+          error: false, 
+          message: 'Fetch Successfully', 
+          StockDetails: response.data.chart.result
+        });
+      } catch (error) {
+        return res.status(200).send({ 
+          error: true, 
+          message: 'Data not found', 
+          StockDetails: [] 
+        });
+      }
+
+  } catch (error) {
+    console.log(error);
+    return res.status(500).send({
+      message: 'Data not found',
+      error: true,
+      StockDetails: []
+    });
+  }
+};
+
 const addStock = async (req, res) => {
   try {
-    const { cname, posting_date,type, cmp_type,point_cmp,down_upto,traget1,target2,target3,cmp,realtime_return,today_date } = req.body;
+    const { cname, posting_date,type, cmp_type,point_cmp,down_upto,traget1,target2,target3,cmp,realtime_return,today_date,description } = req.body;
 
     const result = await sequelize.query(
-      'INSERT INTO stocks (cname, posting_date,type, cmp_type,point_cmp,down_upto,traget1,target2,target3,cmp,realtime_return,today_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      'INSERT INTO stocks (cname, posting_date,type, cmp_type,point_cmp,down_upto,traget1,target2,target3,cmp,realtime_return,today_date,description) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
       {
-        replacements: [cname, posting_date,type, cmp_type,point_cmp,down_upto,traget1,target2,target3,cmp,realtime_return,today_date],
+        replacements: [cname, posting_date,type, cmp_type,point_cmp,down_upto,traget1,target2,target3,cmp,realtime_return,today_date,description],
         type: QueryTypes.INSERT
       }
     );
@@ -227,12 +258,80 @@ const addStock = async (req, res) => {
   }
 };
 
+const updateStock = async (req, res) => {
+  try {
+    const { sid,cname, posting_date,type, cmp_type,point_cmp,down_upto,traget1,target2,target3,cmp,realtime_return,today_date,description } = req.body;
+
+    const result = await sequelize.query(
+      'UPDATE stocks SET cname = ?, posting_date = ?,type = ?, cmp_type = ?,point_cmp = ?,down_upto = ?,traget1 = ?,target2 = ?,target3 = ?,cmp = ?,realtime_return = ?,today_date = ?,description = ? WHERE id = ?',
+      {
+        replacements: [cname, posting_date,type, cmp_type,point_cmp,down_upto,traget1,target2,target3,cmp,realtime_return,today_date,description,sid],
+        type: QueryTypes.UPDATE
+      }
+    );
+    res.status(200).json({ error: false, message: 'Data updated successfully' });
+  } catch (error) {
+    console.error('Error registering user:', error); // Log the error
+    res.status(500).json({error: true, message: 'Internal server error' });
+  }
+};
 
 const fetchAllStocks = async (req, res) => {
   try {
     // Fetch stocks from your database
     const stocksList = await sequelize.query('SELECT * FROM stocks', 
       { replacements: [], type: QueryTypes.SELECT });
+
+    // Iterate over the stocksList and fetch market price and market time for each stock from Yahoo Finance
+    const enrichedStocks = await Promise.all(stocksList.map(async (stock) => {
+      const yahooUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${stock.cname}`; // Assuming stock.symbol holds the stock symbol like RELIANCE.BO
+      try {
+        const response = await axios.get(yahooUrl);
+        const result = response.data.chart.result[0];
+        const regularMarketPrice = result.meta.regularMarketPrice;
+        const regularMarketTime = result.meta.regularMarketTime;
+
+        // Convert regularMarketTime (timestamp) to dd-MM-yyyy format
+        const marketDate = new Date(regularMarketTime * 1000); // Convert from seconds to milliseconds
+        const formattedMarketDate = `${marketDate.getDate().toString().padStart(2, '0')}-${(marketDate.getMonth() + 1).toString().padStart(2, '0')}-${marketDate.getFullYear()}`;
+
+        // Return stock data along with market price and formatted market time
+        return { 
+          ...stock, 
+          regularMarketPrice,
+          regularMarketTime: formattedMarketDate
+        };
+      } catch (error) {
+        console.error(`Failed to fetch market data for ${stock.symbol}`, error);
+        return { 
+          ...stock, 
+          regularMarketPrice: null, 
+          regularMarketTime: null // Return null if the API request fails
+        };
+      }
+    }));
+
+    return res.status(200).send({ 
+      error: false, 
+      message: 'Fetch Successfully', 
+      StockList: enrichedStocks 
+    });
+
+  } catch (error) {
+    console.log(error);
+    return res.status(500).send({
+      message: 'Data not found',
+      error: true
+    });
+  }
+};
+
+const fetchStockbyID = async (req, res) => {
+  try {
+    // Fetch stocks from your database
+    const { sid } = req.body;
+    const stocksList = await sequelize.query('SELECT * FROM stocks WHERE id = ?', 
+      { replacements: [sid], type: QueryTypes.SELECT });
 
     // Iterate over the stocksList and fetch market price and market time for each stock from Yahoo Finance
     const enrichedStocks = await Promise.all(stocksList.map(async (stock) => {
@@ -801,11 +900,29 @@ const fetchUpStocksData = async (req, res) => {
   }
 };
 
+const deleteStock = async (req, res) => {
+  try {
+    const { sId } = req.body;
+
+    const result = await sequelize.query('DELETE FROM stocks WHERE id = ?',
+      { replacements: [sId], type: QueryTypes.DELETE }); 
+
+      return res.status(200).send({ error: false, message: 'Stock Deleted Successfully'});
+
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({
+      message: 'Stock not found',
+      error: true
+    });
+  }
+};
 
 module.exports = {
   checkMobileExist,
   registerUser,
   addStock,
+  updateStock,
   uploadMiddleware,
   fetchAllStocks,
   fetchHomeStocks,
@@ -820,5 +937,8 @@ module.exports = {
   phonepeCallback,
   fetchHomeData,
   adminlogin,
-  fetchAllUsers
+  fetchAllUsers,
+  fetchStockByName,
+  fetchStockbyID,
+  deleteStock
 };
