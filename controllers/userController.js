@@ -242,12 +242,12 @@ const fetchStockByName = async (req, res) => {
 
 const addStock = async (req, res) => {
   try {
-    const { cname, posting_date,type, cmp_type,point_cmp,down_upto,traget1,target2,target3,cmp,realtime_return,today_date,description } = req.body;
+    const { cname, posting_date,type, cmp_type,point_cmp,down_upto,traget1,target2,target3,cmp,realtime_return,duration_t2,duration_t3,today_date,description } = req.body;
 
     const result = await sequelize.query(
-      'INSERT INTO stocks (cname, posting_date,type, cmp_type,point_cmp,down_upto,traget1,target2,target3,cmp,realtime_return,today_date,description) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      'INSERT INTO stocks (cname, posting_date,type, cmp_type,point_cmp,down_upto,traget1,target2,target3,cmp,duration_t1,duration_t2,duration_t3,today_date,description) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
       {
-        replacements: [cname, posting_date,type, cmp_type,point_cmp,down_upto,traget1,target2,target3,cmp,realtime_return,today_date,description],
+        replacements: [cname, posting_date,type, cmp_type,point_cmp,down_upto,traget1,target2,target3,cmp,realtime_return,duration_t2,duration_t3,today_date,description],
         type: QueryTypes.INSERT
       }
     );
