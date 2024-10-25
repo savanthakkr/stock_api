@@ -652,10 +652,12 @@ const fetchAllUserPlan = async (req, res) => {
 
 const fetchAllUserPlanActiveAndInactive = async (req, res) => {
   try {
-
-    // Fetch the subscription plans for the user
+    // Fetch the subscription plans for the user along with the user details
     const existingPlan = await sequelize.query(
-      `SELECT * FROM subscription ORDER BY created_at DESC`,
+      `SELECT subscription.*, users.name as user_name, users.mobile as user_mobile, users.email as user_email
+       FROM subscription
+       JOIN users ON subscription.user_id = users.id
+       ORDER BY subscription.created_at DESC`,
       {
         replacements: [],
         type: QueryTypes.SELECT
@@ -681,7 +683,7 @@ const fetchAllUserPlanActiveAndInactive = async (req, res) => {
         };
       });
 
-      return res.status(200).json({ error: false, message: 'Data fetched successfully', UserPlan: enrichedPlans });
+      return res.status(200).json({ error: false, message: 'Data fetched successfully', UserPlanDetails: enrichedPlans });
     } else {
       return res.status(400).json({ error: true, message: 'Data not found', UserPlan: [] });
     }
@@ -690,6 +692,7 @@ const fetchAllUserPlanActiveAndInactive = async (req, res) => {
     res.status(500).json({ error: true, message: 'Internal server error' });
   }
 };
+
 
 const fetchUserWallet = async (req, res) => {
   try {
