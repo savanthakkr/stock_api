@@ -430,12 +430,14 @@ const fetchActiveStocks = async (req, res) => {
 const fetchHomeStocks = async (req, res) => {
   try {
     // Fetch stocks from your database
-    const stocksList = await sequelize.query('SELECT * FROM stocks WHERE status = ?', 
-      { replacements: ['0'], type: QueryTypes.SELECT });
+    const stocksList = await sequelize.query(
+      'SELECT * FROM stocks WHERE status = ?', 
+      { replacements: ['0'], type: QueryTypes.SELECT }
+    );
 
     // Iterate over the stocksList and fetch market price and market time for each stock from Yahoo Finance
     const enrichedStocks = await Promise.all(stocksList.map(async (stock) => {
-      const yahooUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${stock.cname}`; // Assuming stock.cname holds the stock symbol like RELIANCE.BO
+      const yahooUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${stock.cname}`;
       try {
         const response = await axios.get(yahooUrl);
         const result = response.data.chart.result[0];
@@ -443,25 +445,76 @@ const fetchHomeStocks = async (req, res) => {
         const regularMarketTime = result.meta.regularMarketTime;
 
         // Convert regularMarketTime (timestamp) to dd-MM-yyyy format
-        const marketDate = new Date(regularMarketTime * 1000); // Convert from seconds to milliseconds
+        const marketDate = new Date(regularMarketTime * 1000);
         const formattedMarketDate = `${marketDate.getDate().toString().padStart(2, '0')}-${(marketDate.getMonth() + 1).toString().padStart(2, '0')}-${marketDate.getFullYear()}`;
 
-        // Check if the regularMarketPrice is less than or equal to target1
-        if (regularMarketPrice >= stock.traget1) {
-          // Return stock data along with market price and formatted market time if the condition is met
+        const currentDate = new Intl.DateTimeFormat("en-IN", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+          timeZone: "Asia/Kolkata"
+        }).format(new Date()).replace(/\//g, "-");
+        
+        // Check if manual_exit is set to 1
+        if (stock.manual_exit === "1") {
+          // Return stock data without checking targets
           return { 
             ...stock, 
             regularMarketPrice,
             regularMarketTime: formattedMarketDate 
           };
         } else {
-          // If the condition is not met, return null to exclude this stock
-          return null;
+          // Continue with target checks if manual_exit is not set to 1
+          let updated = false;
+
+          // Target 1 check
+          if (regularMarketPrice >= stock.traget1) {
+            if (!stock.traget1_date) {
+              await sequelize.query(
+                'UPDATE stocks SET traget1_date = ? WHERE id = ?',
+                { replacements: [currentDate, stock.id], type: QueryTypes.UPDATE }
+              );
+              updated = true;
+            }
+          }
+
+          // Target 2 check
+          if (regularMarketPrice >= stock.target2) {
+            if (!stock.traget2_date) {
+              await sequelize.query(
+                'UPDATE stocks SET traget2_date = ? WHERE id = ?',
+                { replacements: [currentDate, stock.id], type: QueryTypes.UPDATE }
+              );
+              updated = true;
+            }
+          }
+
+          // Target 3 check
+          if (regularMarketPrice >= stock.target3) {
+            if (!stock.traget3_date) {
+              await sequelize.query(
+                'UPDATE stocks SET traget3_date = ? WHERE id = ?',
+                { replacements: [currentDate, stock.id], type: QueryTypes.UPDATE }
+              );
+              updated = true;
+            }
+          }
+
+          // Return stock data if any target is hit
+          if (regularMarketPrice >= stock.traget1 || regularMarketPrice >= stock.target2 || regularMarketPrice >= stock.target3) {
+            return { 
+              ...stock, 
+              regularMarketPrice,
+              regularMarketTime: formattedMarketDate 
+            };
+          }
         }
       } catch (error) {
         console.error(`Failed to fetch market data for ${stock.cname}`, error);
         return null; // Return null if the API request fails
       }
+
+      return null; // Return null if no conditions met
     }));
 
     // Filter out any null values (stocks that don't meet the condition or where API failed)
@@ -481,6 +534,7 @@ const fetchHomeStocks = async (req, res) => {
     });
   }
 };
+
 
 const buyPlan = async (req, res) => {
   try {
@@ -657,6 +711,7 @@ const fetchHomeData = async (req, res) => {
       let closedCount = 0;
       let totalDays = 0;
       let totalReturns = 0;
+      let totalProfit = 0;
 
       await Promise.all(homeData.map(async (stock) => {
         const yahooUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${stock.cname}`; // Assuming stock.cname holds the stock symbol like RELIANCE.BO
@@ -682,18 +737,89 @@ const fetchHomeData = async (req, res) => {
           console.log(differperc);
 
           // Check if the regularMarketPrice is greater than or equal to target1
-          if (regularMarketPrice >= stock.traget1) {
+          if (regularMarketPrice >= stock.target3) {
             closedCount += 1;
 
             // Convert posting_date to Date object
             const postingDateParts = stock.posting_date.split('-');
             const postingDate = new Date(postingDateParts[2], postingDateParts[1] - 1, postingDateParts[0]);
+            if(stock.traget3_date != null || stock.traget3_date != ""){
+              const target3Parts = stock.traget3_date.split('-');
+              const target3Date = new Date(target3Parts[2], target3Parts[1] - 1, target3Parts[0]);
 
-            // Calculate days difference
-            const daysDifference = Math.ceil((marketDate - postingDate) / (1000 * 60 * 60 * 24));
-            totalDays += daysDifference;
-            const annualReturn = (differperc / daysDifference) * 365;
-            totalReturns += annualReturn;
+              // Calculate days difference
+              const daysDifference = Math.ceil((target3Date - postingDate) / (1000 * 60 * 60 * 24));
+              totalDays += daysDifference;
+
+              const annualReturn = (differperc / daysDifference) * 365;
+              totalReturns += annualReturn;
+
+              const downPrice = Number(stock.down_upto);
+              const marketPrice = Number(stock.target3);
+
+              const differenceTotal = marketPrice - downPrice;
+              const differenceProfit = (differenceTotal / downPrice) * 100;
+
+              totalProfit += differenceProfit;
+
+              //average return formula
+              console.log("target3 "+totalProfit);
+            }
+
+          } else if (regularMarketPrice >= stock.target2) {
+            closedCount += 1;
+
+            // Convert posting_date to Date object
+            const postingDateParts = stock.posting_date.split('-');
+            const postingDate = new Date(postingDateParts[2], postingDateParts[1] - 1, postingDateParts[0]);
+            if(stock.traget2_date != null || stock.traget2_date != ""){
+              const target2Parts = stock.traget2_date.split('-');
+              const target2Date = new Date(target2Parts[2], target2Parts[1] - 1, target2Parts[0]);
+
+              // Calculate days difference
+              const daysDifference = Math.ceil((target2Date - postingDate) / (1000 * 60 * 60 * 24));
+              totalDays += daysDifference;
+
+              const annualReturn = (differperc / daysDifference) * 365;
+              totalReturns += annualReturn;
+
+              const downPrice = Number(stock.down_upto);
+              const marketPrice = Number(stock.target2);
+
+              const differenceTotal = marketPrice - downPrice;
+              const differenceProfit = (differenceTotal / downPrice) * 100;
+              //average return formula
+              totalProfit += differenceProfit;
+              console.log("target2 "+totalProfit);
+            }
+
+          } else if (regularMarketPrice >= stock.traget1) {
+            closedCount += 1;
+
+            const postingDateParts = stock.posting_date.split('-');
+            const postingDate = new Date(postingDateParts[2], postingDateParts[1] - 1, postingDateParts[0]);
+
+            if(stock.traget1_date != null || stock.traget1_date != ""){
+              const target1Parts = stock.traget1_date.split('-');
+              const target1Date = new Date(target1Parts[2], target1Parts[1] - 1, target1Parts[0]);
+  
+              // Calculate days difference
+              const daysDifference = Math.ceil((target1Date - postingDate) / (1000 * 60 * 60 * 24));
+              totalDays += daysDifference;
+
+              const annualReturn = (differperc / daysDifference) * 365;
+              totalReturns += annualReturn;
+  
+              const downPrice = Number(stock.down_upto);
+              const marketPrice = Number(stock.traget1);
+
+              const differenceTotal = marketPrice - downPrice;
+              const differenceProfit = (differenceTotal / downPrice) * 100;
+              totalProfit += differenceProfit;
+              //average return formula
+              console.log("traget1 "+totalProfit);
+            }
+          
           }
         } catch (error) {
           console.error(`Failed to fetch market data for ${stock.cname}`, error);
@@ -705,13 +831,17 @@ const fetchHomeData = async (req, res) => {
       const tDays = closedCount > 0 ? (totalDays / closedCount) : 0;
       const tReturn = totalReturns / closedCount;
 
+      const avgTotalProfit = totalProfit / closedCount;
+      const avgDays = totalDays / closedCount;
+      const annualReturn = (avgTotalProfit / avgDays) * 365;
+      console.log("avgTotalProfit "+avgTotalProfit+" Days "+avgDays+" Annual Return "+annualReturn);
       // Prepare the response data
       const allData = {
         totalStocks: homeData.length,
         exitStocks: closedCount,
         successRate: srate,
-        avgDays: tDays,
-        annualReturn: tReturn
+        avgDays: avgDays,
+        annualReturn: annualReturn
       };
 
       return res.status(200).json({ error: false, message: 'Data Fetch', HomeData: allData });
