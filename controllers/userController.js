@@ -10,17 +10,17 @@ const otpGenerator = require('otp-generator');
 const { broadcastMessage } = require('./soketController');
 
 const nodemailer = require('nodemailer');
-const { error } = require('console');
+const { error, log } = require('console');
 const QRCode = require('qrcode');
 const axios = require('axios');
 const multer = require('multer');
 // Set up storage with multer to store images in the 'uploads' directory
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-      cb(null, 'uploads/');
+    cb(null, 'uploads/');
   },
   filename: (req, file, cb) => {
-      cb(null, Date.now() + path.extname(file.originalname));
+    cb(null, Date.now() + path.extname(file.originalname));
   }
 });
 
@@ -35,14 +35,14 @@ if (!fs.existsSync('uploads')) {
 const saveBase64File = (base64String, folderPath) => {
   // Check if the base64 string includes the prefix
   let matches = base64String.match(/^data:(.+);base64,(.+)$/);
-  
+
   if (!matches) {
     // If the prefix is missing, assume the entire string is base64 without the metadata
     matches = [null, 'application/octet-stream', base64String];
   }
 
   if (matches.length !== 3) {
-      throw new Error('Invalid base64 string');
+    throw new Error('Invalid base64 string');
   }
 
   const ext = matches[1].split('/')[1]; // get the file extension
@@ -164,14 +164,14 @@ const checkMobileExist = async (req, res) => {
         type: QueryTypes.SELECT
       }
     );
-    
+
     if (existingUserMobile.length === 0) {
-      res.status(200).json({ error: false, message: 'Mobile number not exist', userId: 0,userType: "1", userName: ""});
+      res.status(200).json({ error: false, message: 'Mobile number not exist', userId: 0, userType: "1", userName: "" });
     } else {
       const userId = existingUserMobile[0].id;
       const userType = existingUserMobile[0].type;
       const name = existingUserMobile[0].name;
-      res.status(200).json({ error: true, message: 'Mobile number is exist', userId: userId,userType: userType,userName: name });
+      res.status(200).json({ error: true, message: 'Mobile number is exist', userId: userId, userType: userType, userName: name });
     }
   } catch (error) {
     console.error('Error registering user:', error); // Log the error
@@ -182,30 +182,30 @@ const checkMobileExist = async (req, res) => {
 
 const registerUser = async (req, res) => {
   try {
-    const { name, mobile,email, type,rMobile } = req.body;
+    const { name, mobile, email, type, rMobile } = req.body;
 
     const result = await sequelize.query(
       'INSERT INTO users (name, mobile, email, type) VALUES (?, ?, ?, ?)',
       {
-        replacements: [name, mobile,email, type],
+        replacements: [name, mobile, email, type],
         type: QueryTypes.INSERT
       }
     );
 
-    if(rMobile){
+    if (rMobile) {
       const referralData = await sequelize.query(
         'INSERT INTO referal_data (user_mobile, referral_mobile, amount) VALUES (?, ?, ?)',
         {
-          replacements: [mobile, rMobile,'100'],
+          replacements: [mobile, rMobile, '100'],
           type: QueryTypes.INSERT
         }
       );
     }
     const userId = result[0];
-    res.status(200).json({ error: false, message: 'Registered successfully', userId: userId,userType: type ,userName: name });
+    res.status(200).json({ error: false, message: 'Registered successfully', userId: userId, userType: type, userName: name });
   } catch (error) {
     console.error('Error registering user:', error); // Log the error
-    res.status(500).json({error: true, message: 'Internal server error' });
+    res.status(500).json({ error: true, message: 'Internal server error' });
   }
 };
 
@@ -215,20 +215,20 @@ const fetchStockByName = async (req, res) => {
     const { stock_name } = req.body;
 
     const yahooUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${stock_name}`; // Assuming stock.symbol holds the stock symbol like RELIANCE.BO
-      try {
-        const response = await axios.get(yahooUrl);
-        return res.status(200).send({ 
-          error: false, 
-          message: 'Fetch Successfully', 
-          StockDetails: response.data.chart.result
-        });
-      } catch (error) {
-        return res.status(200).send({ 
-          error: true, 
-          message: 'Data not found', 
-          StockDetails: [] 
-        });
-      }
+    try {
+      const response = await axios.get(yahooUrl);
+      return res.status(200).send({
+        error: false,
+        message: 'Fetch Successfully',
+        StockDetails: response.data.chart.result
+      });
+    } catch (error) {
+      return res.status(200).send({
+        error: true,
+        message: 'Data not found',
+        StockDetails: []
+      });
+    }
 
   } catch (error) {
     console.log(error);
@@ -242,44 +242,44 @@ const fetchStockByName = async (req, res) => {
 
 const addStock = async (req, res) => {
   try {
-    const { cname, posting_date,type, cmp_type,point_cmp,down_upto,traget1,target2,target3,cmp,realtime_return,duration_t2,duration_t3,stop_loss,today_date,description } = req.body;
+    const { cname, posting_date, type, cmp_type, point_cmp, down_upto, traget1, target2, target3, cmp, realtime_return, duration_t2, duration_t3, stop_loss, today_date, description } = req.body;
 
     const result = await sequelize.query(
       'INSERT INTO stocks (cname, posting_date,type, cmp_type,point_cmp,down_upto,traget1,target2,target3,cmp,duration_t1,duration_t2,duration_t3,stop_loss,today_date,description) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
       {
-        replacements: [cname, posting_date,type, cmp_type,point_cmp,down_upto,traget1,target2,target3,cmp,realtime_return,duration_t2,duration_t3,stop_loss,today_date,description],
+        replacements: [cname, posting_date, type, cmp_type, point_cmp, down_upto, traget1, target2, target3, cmp, realtime_return, duration_t2, duration_t3, stop_loss, today_date, description],
         type: QueryTypes.INSERT
       }
     );
     res.status(200).json({ error: false, message: 'Data added successfully' });
   } catch (error) {
     console.error('Error registering user:', error); // Log the error
-    res.status(500).json({error: true, message: 'Internal server error' });
+    res.status(500).json({ error: true, message: 'Internal server error' });
   }
 };
 
 const updateStock = async (req, res) => {
   try {
-    const { sid,cname, posting_date,type, cmp_type,point_cmp,down_upto,traget1,target2,target3,cmp,realtime_return,today_date,description } = req.body;
+    const { sid, cname, posting_date, type, cmp_type, point_cmp, down_upto, traget1, target2, target3, cmp, realtime_return, today_date, description } = req.body;
 
     const result = await sequelize.query(
       'UPDATE stocks SET cname = ?, posting_date = ?,type = ?, cmp_type = ?,point_cmp = ?,down_upto = ?,traget1 = ?,target2 = ?,target3 = ?,cmp = ?,realtime_return = ?,today_date = ?,description = ? WHERE id = ?',
       {
-        replacements: [cname, posting_date,type, cmp_type,point_cmp,down_upto,traget1,target2,target3,cmp,realtime_return,today_date,description,sid],
+        replacements: [cname, posting_date, type, cmp_type, point_cmp, down_upto, traget1, target2, target3, cmp, realtime_return, today_date, description, sid],
         type: QueryTypes.UPDATE
       }
     );
     res.status(200).json({ error: false, message: 'Data updated successfully' });
   } catch (error) {
     console.error('Error registering user:', error); // Log the error
-    res.status(500).json({error: true, message: 'Internal server error' });
+    res.status(500).json({ error: true, message: 'Internal server error' });
   }
 };
 
 const fetchAllStocks = async (req, res) => {
   try {
     // Fetch stocks from your database
-    const stocksList = await sequelize.query('SELECT * FROM stocks', 
+    const stocksList = await sequelize.query('SELECT * FROM stocks',
       { replacements: [], type: QueryTypes.SELECT });
 
     // Iterate over the stocksList and fetch market price and market time for each stock from Yahoo Finance
@@ -296,25 +296,25 @@ const fetchAllStocks = async (req, res) => {
         const formattedMarketDate = `${marketDate.getDate().toString().padStart(2, '0')}-${(marketDate.getMonth() + 1).toString().padStart(2, '0')}-${marketDate.getFullYear()}`;
 
         // Return stock data along with market price and formatted market time
-        return { 
-          ...stock, 
+        return {
+          ...stock,
           regularMarketPrice,
           regularMarketTime: formattedMarketDate
         };
       } catch (error) {
         console.error(`Failed to fetch market data for ${stock.symbol}`, error);
-        return { 
-          ...stock, 
-          regularMarketPrice: null, 
+        return {
+          ...stock,
+          regularMarketPrice: null,
           regularMarketTime: null // Return null if the API request fails
         };
       }
     }));
 
-    return res.status(200).send({ 
-      error: false, 
-      message: 'Fetch Successfully', 
-      StockList: enrichedStocks 
+    return res.status(200).send({
+      error: false,
+      message: 'Fetch Successfully',
+      StockList: enrichedStocks
     });
 
   } catch (error) {
@@ -330,7 +330,7 @@ const fetchStockbyID = async (req, res) => {
   try {
     // Fetch stocks from your database
     const { sid } = req.body;
-    const stocksList = await sequelize.query('SELECT * FROM stocks WHERE id = ?', 
+    const stocksList = await sequelize.query('SELECT * FROM stocks WHERE id = ?',
       { replacements: [sid], type: QueryTypes.SELECT });
 
     // Iterate over the stocksList and fetch market price and market time for each stock from Yahoo Finance
@@ -347,25 +347,25 @@ const fetchStockbyID = async (req, res) => {
         const formattedMarketDate = `${marketDate.getDate().toString().padStart(2, '0')}-${(marketDate.getMonth() + 1).toString().padStart(2, '0')}-${marketDate.getFullYear()}`;
 
         // Return stock data along with market price and formatted market time
-        return { 
-          ...stock, 
+        return {
+          ...stock,
           regularMarketPrice,
           regularMarketTime: formattedMarketDate
         };
       } catch (error) {
         console.error(`Failed to fetch market data for ${stock.symbol}`, error);
-        return { 
-          ...stock, 
-          regularMarketPrice: null, 
+        return {
+          ...stock,
+          regularMarketPrice: null,
           regularMarketTime: null // Return null if the API request fails
         };
       }
     }));
 
-    return res.status(200).send({ 
-      error: false, 
-      message: 'Fetch Successfully', 
-      StockList: enrichedStocks 
+    return res.status(200).send({
+      error: false,
+      message: 'Fetch Successfully',
+      StockList: enrichedStocks
     });
 
   } catch (error) {
@@ -380,7 +380,7 @@ const fetchStockbyID = async (req, res) => {
 const fetchActiveStocks = async (req, res) => {
   try {
     // Fetch stocks from your database
-    const stocksList = await sequelize.query('SELECT * FROM stocks WHERE status = ?', 
+    const stocksList = await sequelize.query('SELECT * FROM stocks WHERE status = ?',
       { replacements: ['0'], type: QueryTypes.SELECT });
 
     // Iterate over the stocksList and fetch market price and market time for each stock from Yahoo Finance
@@ -397,25 +397,25 @@ const fetchActiveStocks = async (req, res) => {
         const formattedMarketDate = `${marketDate.getDate().toString().padStart(2, '0')}-${(marketDate.getMonth() + 1).toString().padStart(2, '0')}-${marketDate.getFullYear()}`;
 
         // Return stock data along with market price and formatted market time
-        return { 
-          ...stock, 
+        return {
+          ...stock,
           regularMarketPrice,
           regularMarketTime: formattedMarketDate
         };
       } catch (error) {
         console.error(`Failed to fetch market data for ${stock.symbol}`, error);
-        return { 
-          ...stock, 
-          regularMarketPrice: null, 
+        return {
+          ...stock,
+          regularMarketPrice: null,
           regularMarketTime: null // Return null if the API request fails
         };
       }
     }));
 
-    return res.status(200).send({ 
-      error: false, 
-      message: 'Fetch Successfully', 
-      StockList: enrichedStocks 
+    return res.status(200).send({
+      error: false,
+      message: 'Fetch Successfully',
+      StockList: enrichedStocks
     });
 
   } catch (error) {
@@ -431,7 +431,7 @@ const fetchHomeStocks = async (req, res) => {
   try {
     // Fetch stocks from your database
     const stocksList = await sequelize.query(
-      'SELECT * FROM stocks WHERE status = ?', 
+      'SELECT * FROM stocks WHERE status = ?',
       { replacements: ['0'], type: QueryTypes.SELECT }
     );
 
@@ -454,14 +454,14 @@ const fetchHomeStocks = async (req, res) => {
           year: "numeric",
           timeZone: "Asia/Kolkata"
         }).format(new Date()).replace(/\//g, "-");
-        
+
         // Check if manual_exit is set to 1
         if (stock.manual_exit === "1") {
           // Return stock data without checking targets
-          return { 
-            ...stock, 
+          return {
+            ...stock,
             regularMarketPrice,
-            regularMarketTime: formattedMarketDate 
+            regularMarketTime: formattedMarketDate
           };
         } else {
           // Continue with target checks if manual_exit is not set to 1
@@ -502,10 +502,10 @@ const fetchHomeStocks = async (req, res) => {
 
           // Return stock data if any target is hit
           if (regularMarketPrice >= stock.traget1 || regularMarketPrice >= stock.target2 || regularMarketPrice >= stock.target3) {
-            return { 
-              ...stock, 
+            return {
+              ...stock,
               regularMarketPrice,
-              regularMarketTime: formattedMarketDate 
+              regularMarketTime: formattedMarketDate
             };
           }
         }
@@ -520,10 +520,10 @@ const fetchHomeStocks = async (req, res) => {
     // Filter out any null values (stocks that don't meet the condition or where API failed)
     const filteredStocks = enrichedStocks.filter(stock => stock !== null);
 
-    return res.status(200).send({ 
-      error: false, 
-      message: 'Fetch Successfully', 
-      StockList: filteredStocks 
+    return res.status(200).send({
+      error: false,
+      message: 'Fetch Successfully',
+      StockList: filteredStocks
     });
 
   } catch (error) {
@@ -538,7 +538,7 @@ const fetchHomeStocks = async (req, res) => {
 
 const buyPlan = async (req, res) => {
   try {
-    const { user_id, plan_name, start_date, end_date, amount, transaction_id,uMobile } = req.body;
+    const { user_id, plan_name, start_date, end_date, amount, transaction_id, uMobile } = req.body;
 
     // Convert 'dd-MM-yyyy' format into a comparable date format (MySQL 'yyyy-MM-dd')
     const existingPlan = await sequelize.query(
@@ -633,9 +633,51 @@ const fetchAllUserPlan = async (req, res) => {
         const status = formattedEndDate >= currentDate ? 'active' : 'inactive';
 
         // Add status to each plan object
-        return { 
-          ...plan, 
-          status 
+        return {
+          ...plan,
+          status
+        };
+      });
+
+      return res.status(200).json({ error: false, message: 'Data fetched successfully', UserPlan: enrichedPlans });
+    } else {
+      return res.status(400).json({ error: true, message: 'Data not found', UserPlan: [] });
+    }
+  } catch (error) {
+    console.error('Error fetching subscription:', error);
+    res.status(500).json({ error: true, message: 'Internal server error' });
+  }
+};
+
+
+const fetchAllUserPlanActiveAndInactive = async (req, res) => {
+  try {
+
+    // Fetch the subscription plans for the user
+    const existingPlan = await sequelize.query(
+      `SELECT * FROM subscription ORDER BY created_at DESC`,
+      {
+        replacements: [],
+        type: QueryTypes.SELECT
+      }
+    );
+
+    if (existingPlan.length > 0) {
+      // Get the current date
+      const currentDate = new Date();
+
+      // Iterate over each plan and check if it's active or inactive based on the end_date
+      const enrichedPlans = existingPlan.map((plan) => {
+        const endDateParts = plan.end_date.split('-'); // Assuming end_date is in 'dd-MM-yyyy' format
+        const formattedEndDate = new Date(`${endDateParts[2]}-${endDateParts[1]}-${endDateParts[0]}`);
+
+        // Check if the plan is active or inactive
+        const status = formattedEndDate >= currentDate ? 'active' : 'inactive';
+
+        // Add status to each plan object
+        return {
+          ...plan,
+          status
         };
       });
 
@@ -657,15 +699,15 @@ const fetchUserWallet = async (req, res) => {
     const existingPlan = await sequelize.query(
       `SELECT SUM(amount) as WALLET FROM referal_data WHERE referral_mobile = ? AND status = ?`,
       {
-        replacements: [user_phone,'0'],
+        replacements: [user_phone, '0'],
         type: QueryTypes.SELECT
       }
     );
 
     if (existingPlan.length > 0) {
-      return res.status(200).json({ error: false, message: 'Data Fetch',WalletData: existingPlan});
+      return res.status(200).json({ error: false, message: 'Data Fetch', WalletData: existingPlan });
     } else {
-      return res.status(400).json({ error: true, message: 'Data not found',WalletData: [] });
+      return res.status(400).json({ error: true, message: 'Data not found', WalletData: [] });
     }
   } catch (error) {
     console.error('Error adding subscription:', error);
@@ -709,6 +751,8 @@ const fetchHomeData = async (req, res) => {
 
     if (homeData.length > 0) {
       let closedCount = 0;
+      let profitcalls = 0;
+      let profitcallsCount = 0;
       let totalDays = 0;
       let totalReturns = 0;
       let totalProfit = 0;
@@ -729,6 +773,19 @@ const fetchHomeData = async (req, res) => {
           const sprice = Number(stock.down_upto) - stockPer;
           const eprice = Number(stock.down_upto) + stockPer;
           const avgPrice = (sprice + eprice) / 2;
+          const profitcalls = stock.manual_exit === "1";
+          console.log(profitcalls);
+          console.log("profitcalls");
+
+          // If true, increment the count
+          if (!profitcalls) {
+            profitcallsCount++;
+          }
+
+          console.log(profitcallsCount);
+          console.log("profitcallsCount");
+
+
 
           const differenceTarget = Number(stock.traget1) - avgPrice;
 
@@ -743,7 +800,7 @@ const fetchHomeData = async (req, res) => {
             // Convert posting_date to Date object
             const postingDateParts = stock.posting_date.split('-');
             const postingDate = new Date(postingDateParts[2], postingDateParts[1] - 1, postingDateParts[0]);
-            if(stock.traget3_date != null || stock.traget3_date != ""){
+            if (stock.traget3_date != null || stock.traget3_date != "") {
               const target3Parts = stock.traget3_date.split('-');
               const target3Date = new Date(target3Parts[2], target3Parts[1] - 1, target3Parts[0]);
 
@@ -763,7 +820,7 @@ const fetchHomeData = async (req, res) => {
               totalProfit += differenceProfit;
 
               //average return formula
-              console.log("target3 "+totalProfit);
+              console.log("target3 " + totalProfit);
             }
 
           } else if (regularMarketPrice >= stock.target2) {
@@ -772,7 +829,7 @@ const fetchHomeData = async (req, res) => {
             // Convert posting_date to Date object
             const postingDateParts = stock.posting_date.split('-');
             const postingDate = new Date(postingDateParts[2], postingDateParts[1] - 1, postingDateParts[0]);
-            if(stock.traget2_date != null || stock.traget2_date != ""){
+            if (stock.traget2_date != null || stock.traget2_date != "") {
               const target2Parts = stock.traget2_date.split('-');
               const target2Date = new Date(target2Parts[2], target2Parts[1] - 1, target2Parts[0]);
 
@@ -790,7 +847,7 @@ const fetchHomeData = async (req, res) => {
               const differenceProfit = (differenceTotal / downPrice) * 100;
               //average return formula
               totalProfit += differenceProfit;
-              console.log("target2 "+totalProfit);
+              console.log("target2 " + totalProfit);
             }
 
           } else if (regularMarketPrice >= stock.traget1) {
@@ -799,17 +856,17 @@ const fetchHomeData = async (req, res) => {
             const postingDateParts = stock.posting_date.split('-');
             const postingDate = new Date(postingDateParts[2], postingDateParts[1] - 1, postingDateParts[0]);
 
-            if(stock.traget1_date != null || stock.traget1_date != ""){
+            if (stock.traget1_date != null || stock.traget1_date != "") {
               const target1Parts = stock.traget1_date.split('-');
               const target1Date = new Date(target1Parts[2], target1Parts[1] - 1, target1Parts[0]);
-  
+
               // Calculate days difference
               const daysDifference = Math.ceil((target1Date - postingDate) / (1000 * 60 * 60 * 24));
               totalDays += daysDifference;
 
               const annualReturn = (differperc / daysDifference) * 365;
               totalReturns += annualReturn;
-  
+
               const downPrice = Number(stock.down_upto);
               const marketPrice = Number(stock.traget1);
 
@@ -817,9 +874,9 @@ const fetchHomeData = async (req, res) => {
               const differenceProfit = (differenceTotal / downPrice) * 100;
               totalProfit += differenceProfit;
               //average return formula
-              console.log("traget1 "+totalProfit);
+              console.log("traget1 " + totalProfit);
             }
-          
+
           }
         } catch (error) {
           console.error(`Failed to fetch market data for ${stock.cname}`, error);
@@ -827,14 +884,19 @@ const fetchHomeData = async (req, res) => {
       }));
 
       // Avoid division by zero and calculate average days
-      const srate = (closedCount / homeData.length) * 100;
+      const srate = (profitcallsCount / closedCount);
+      console.log(srate);
+      console.log("srate");
+      
+      
+
       const tDays = closedCount > 0 ? (totalDays / closedCount) : 0;
       const tReturn = totalReturns / closedCount;
 
       const avgTotalProfit = totalProfit / closedCount;
       const avgDays = totalDays / closedCount;
       const annualReturn = (avgTotalProfit / avgDays) * 365;
-      console.log("avgTotalProfit "+avgTotalProfit+" Days "+avgDays+" Annual Return "+annualReturn);
+      console.log("avgTotalProfit " + avgTotalProfit + " Days " + avgDays + " Annual Return " + annualReturn);
       // Prepare the response data
       const allData = {
         totalStocks: homeData.length,
@@ -864,17 +926,17 @@ const fetchHomeData = async (req, res) => {
 
 const adminlogin = async (req, res) => {
   try {
-    const { email,password } = req.body;
+    const { email, password } = req.body;
 
     const [existingUser] = await sequelize.query('SELECT * FROM admin WHERE email = ? AND password = ? AND status = ?',
-      { replacements: [email,password,'0'], type: QueryTypes.SELECT });
+      { replacements: [email, password, '0'], type: QueryTypes.SELECT });
     if (existingUser) {
       return res.status(200).send({ error: false, message: 'Login success!', Login: existingUser });
     } else {
       return res.status(404).send({ error: true, message: 'Email or Password is wrong!' });
     }
 
-    
+
   } catch (error) {
     console.log(error);
     res.status(500).send({
@@ -888,9 +950,9 @@ const fetchAllUsers = async (req, res) => {
   try {
 
     const productList = await sequelize.query('SELECT * FROM users WHERE type = ? ORDER BY id DESC',
-      { replacements: ['1'], type: QueryTypes.SELECT }); 
+      { replacements: ['1'], type: QueryTypes.SELECT });
 
-    if(productList.length > 0){
+    if (productList.length > 0) {
       return res.status(200).send({ error: false, message: 'Data Fetch Successfully', Users: productList });
     } else {
       return res.status(404).send({ error: true, message: 'Data not found', Users: [] });
@@ -905,40 +967,40 @@ const fetchAllUsers = async (req, res) => {
   }
 };
 
-const upstockLogin = async (req,res) => {
-    const apiKey = 'dab9535d-e4e9-4a9d-8249-f8280fb01741'; // Your Upstox API Key
-    const redirectUri = 'http://localhost:3304/api/callback'; // Ensure this matches the registered redirect URI
-  
-    // Construct the Upstox login URL
-    const authUrl = `https://api.upstox.com/v2/login/authorization/dialog?client_id=${apiKey}&redirect_uri=${redirectUri}&response_type=code`;
-    
-    // Redirect the user to the Upstox login page
-    res.redirect(authUrl);
+const upstockLogin = async (req, res) => {
+  const apiKey = 'dab9535d-e4e9-4a9d-8249-f8280fb01741'; // Your Upstox API Key
+  const redirectUri = 'http://localhost:3304/api/callback'; // Ensure this matches the registered redirect URI
+
+  // Construct the Upstox login URL
+  const authUrl = `https://api.upstox.com/v2/login/authorization/dialog?client_id=${apiKey}&redirect_uri=${redirectUri}&response_type=code`;
+
+  // Redirect the user to the Upstox login page
+  res.redirect(authUrl);
 };
 
-const upstockCallback = async (req,res) => {
+const upstockCallback = async (req, res) => {
   const apiKey = 'dab9535d-e4e9-4a9d-8249-f8280fb01741'; // Your Upstox API Key
-    const apiSecret = '85pzm6zvpd'; // Your Upstox Secret Key
-    const requestToken = 'vF5XA7'; // Extract the request token from the query
-    const redirectUri = 'http://localhost:3304/api/callback'; // Your redirect URI
-  
-    if (!requestToken) {
-      return res.status(400).send({
-        error: true,
-        message: 'Request token is missing'
-      });
-    }
-  
-    try {
-      // Exchange the request token for access token
-      const tokenUrl = 'https://api.upstox.com/v2/login/authorization/token';
-      // const tokenData = {
-      //   apiKey: apiKey,
-      //   apiSecret: apiSecret,
-      //   requestToken: requestToken,
-      //   redirectUri: redirectUri,
-      //   grant_type: 'authorization_code'
-      // };
+  const apiSecret = '85pzm6zvpd'; // Your Upstox Secret Key
+  const requestToken = 'vF5XA7'; // Extract the request token from the query
+  const redirectUri = 'http://localhost:3304/api/callback'; // Your redirect URI
+
+  if (!requestToken) {
+    return res.status(400).send({
+      error: true,
+      message: 'Request token is missing'
+    });
+  }
+
+  try {
+    // Exchange the request token for access token
+    const tokenUrl = 'https://api.upstox.com/v2/login/authorization/token';
+    // const tokenData = {
+    //   apiKey: apiKey,
+    //   apiSecret: apiSecret,
+    //   requestToken: requestToken,
+    //   redirectUri: redirectUri,
+    //   grant_type: 'authorization_code'
+    // };
 
     //   const tokenData = {
     //     code: requestToken,
@@ -955,34 +1017,34 @@ const upstockCallback = async (req,res) => {
       redirect_uri: redirectUri,
       grant_type: 'authorization_code'
     });
-  
-      const tokenResponse = await axios.post(tokenUrl, data, {
-        headers: { 
-          'Accept': 'application/json',
-          'Content-Type': 'application/x-www-form-urlencoded'
-         }
-      });
-  
-      if (tokenResponse.status !== 200) {
-        return res.status(500).send({
-          error: true,
-          message: 'Failed to generate access token from Upstox'
-        });
+
+    const tokenResponse = await axios.post(tokenUrl, data, {
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/x-www-form-urlencoded'
       }
-  
-      const accessToken = tokenResponse.data.access_token;
-  
-      // Store the access token securely (in session, database, etc.)
-      // For now, just send it in the response
-      res.send(`Access token received! Your access token is: ${accessToken}`);
-      
-    } catch (error) {
-      console.error('Error exchanging request token:', error);
-      res.status(500).send({
+    });
+
+    if (tokenResponse.status !== 200) {
+      return res.status(500).send({
         error: true,
-        message: 'Error exchanging request token for access token'
+        message: 'Failed to generate access token from Upstox'
       });
     }
+
+    const accessToken = tokenResponse.data.access_token;
+
+    // Store the access token securely (in session, database, etc.)
+    // For now, just send it in the response
+    res.send(`Access token received! Your access token is: ${accessToken}`);
+
+  } catch (error) {
+    console.error('Error exchanging request token:', error);
+    res.status(500).send({
+      error: true,
+      message: 'Error exchanging request token for access token'
+    });
+  }
 };
 
 const fetchUpStocksData = async (req, res) => {
@@ -998,7 +1060,7 @@ const fetchUpStocksData = async (req, res) => {
 
     // Fetch stock data from Upstox API
     const stockDataUrl = 'https://api.upstox.com/index/market_data';
-    
+
     const stocksResponse = await axios.get(stockDataUrl, {
       headers: {
         'Authorization': `Bearer ${accessToken}`
@@ -1035,9 +1097,9 @@ const deleteStock = async (req, res) => {
     const { sId } = req.body;
 
     const result = await sequelize.query('DELETE FROM stocks WHERE id = ?',
-      { replacements: [sId], type: QueryTypes.DELETE }); 
+      { replacements: [sId], type: QueryTypes.DELETE });
 
-      return res.status(200).send({ error: false, message: 'Stock Deleted Successfully'});
+    return res.status(200).send({ error: false, message: 'Stock Deleted Successfully' });
 
   } catch (error) {
     console.log(error);
@@ -1061,6 +1123,7 @@ module.exports = {
   checkUserPlan,
   fetchUserWallet,
   fetchAllUserPlan,
+  fetchAllUserPlanActiveAndInactive,
   upstockLogin,
   upstockCallback,
   fetchUpStocksData,

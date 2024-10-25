@@ -5,13 +5,14 @@ const { verifyToken } = require("../middlewares/roleMiddleware");
 
 const {checkMobileExist,registerUser,addStock,fetchAllStocks,fetchActiveStocks,buyPlan,checkUserPlan,fetchUserWallet,fetchAllUserPlan,
     fetchHomeStocks,upstockLogin,upstockCallback,fetchUpStocksData,phonepeCallback,fetchHomeData,adminlogin,fetchAllUsers,
-    fetchStockByName,fetchStockbyID,updateStock,deleteStock } = userController; 
+    fetchStockByName,fetchStockbyID,fetchAllUserPlanActiveAndInactive,updateStock,deleteStock } = userController; 
 
 router.post('/checkMobileExist', checkMobileExist);
 router.post('/registerUser', registerUser);
 router.post('/addStock', addStock);
 router.get('/fetchAllStocks', fetchAllStocks);
 router.get('/fetchActiveStocks', fetchActiveStocks);
+router.get('/fetchAllUserPlanActiveAndInactive', fetchAllUserPlanActiveAndInactive);
 router.post('/buyPlan', buyPlan);
 router.post('/checkUserPlan', checkUserPlan);
 router.post('/fetchUserWallet', fetchUserWallet);
