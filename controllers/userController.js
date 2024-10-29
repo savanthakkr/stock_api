@@ -501,7 +501,7 @@ const fetchHomeStocks = async (req, res) => {
           }
 
           // Return stock data if any target is hit
-          if (regularMarketPrice >= stock.traget1 || regularMarketPrice >= stock.target2 || regularMarketPrice >= stock.target3) {
+          if (stock.traget1_date != null || stock.traget2_date != null || stock.traget3_date != null) {
             return {
               ...stock,
               regularMarketPrice,
@@ -742,6 +742,86 @@ const phonepeCallback = async (req, res) => {
   });
 };
 
+const fetchHomeData1 = async (req, res) => {
+  try {
+    const homeData = await sequelize.query(
+      `SELECT * FROM stocks ORDER BY id DESC`,
+      {
+        replacements: [],
+        type: QueryTypes.SELECT
+      }
+    );
+
+    if (homeData.length > 0) {
+      let closedCount = 0;
+      let profitcalls = 0;
+      let profitcallsCount = 0;
+      let totalDays = 0;
+      let totalReturns = 0;
+      let totalProfit = 0;
+
+      await Promise.all(homeData.map(async (stock) => {
+        const yahooUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${stock.cname}`; // Assuming stock.cname holds the stock symbol like RELIANCE.BO
+        try {
+          const response = await axios.get(yahooUrl);
+          const result = response.data.chart.result[0];
+          const regularMarketPrice = result.meta.regularMarketPrice;
+          const regularMarketTime = result.meta.regularMarketTime;
+
+          // Convert regularMarketTime (timestamp) to dd-MM-yyyy format
+          const marketDate = new Date(regularMarketTime * 1000); // Convert from seconds to milliseconds
+
+          // Price calculations
+          const stockPer = Number(stock.down_upto) * 0.0025;
+          const sprice = Number(stock.down_upto) - stockPer;
+          const eprice = Number(stock.down_upto) + stockPer;
+          const avgPrice = (sprice + eprice) / 2;
+
+          const postingDateParts = stock.traget1_date.split('-');
+          const postingDate = new Date(postingDateParts[2], postingDateParts[1] - 1, postingDateParts[0]);
+          console.log(postingDate);
+          console.log("traget1_date");
+          
+
+
+          const differenceTarget = Number(stock.traget1) - avgPrice;
+
+          const differperc = (differenceTarget / 100) * 100;
+
+          console.log(differperc);
+
+        } catch (error) {
+          console.error(`Failed to fetch market data for ${stock.cname}`, error);
+        }
+      }));
+
+
+      // Prepare the response data
+      const allData = {
+        totalStocks: homeData.length,
+        exitStocks: closedCount,
+        successRate: srate,
+        avgDays: avgDays,
+        annualReturn: annualReturn
+      };
+
+      return res.status(200).json({ error: false, message: 'Data Fetch', HomeData: allData });
+    } else {
+      const allData = {
+        totalStocks: 0,
+        exitStocks: 0,
+        successRate: 0,
+        avgDays: 0,
+        annualReturn: 0
+      };
+      return res.status(400).json({ error: true, message: 'Data not found', HomeData: allData });
+    }
+  } catch (error) {
+    console.error('Error fetching home data:', error);
+    return res.status(500).json({ error: true, message: 'Internal server error' });
+  }
+};
+
 const fetchHomeData = async (req, res) => {
   try {
     const homeData = await sequelize.query(
@@ -776,18 +856,12 @@ const fetchHomeData = async (req, res) => {
           const sprice = Number(stock.down_upto) - stockPer;
           const eprice = Number(stock.down_upto) + stockPer;
           const avgPrice = (sprice + eprice) / 2;
-          const profitcalls = stock.manual_exit === "1";
-          console.log(profitcalls);
-          console.log("profitcalls");
 
-          // If true, increment the count
-          if (!profitcalls) {
-            profitcallsCount++;
-          }
-
-          console.log(profitcallsCount);
-          console.log("profitcallsCount");
-
+          // const postingDateParts = stock.traget1_date.split('-');
+          // const postingDate = new Date(postingDateParts[2], postingDateParts[1] - 1, postingDateParts[0]);
+          // console.log(postingDate);
+          // console.log("traget1_date");
+          
 
 
           const differenceTarget = Number(stock.traget1) - avgPrice;
@@ -796,14 +870,25 @@ const fetchHomeData = async (req, res) => {
 
           console.log(differperc);
 
+          if (stock.manual_exit == "1") {
+            closedCount += 1;
+          }
+
+          if (stock.traget1_date != null && stock.traget1_date != "") {
+            profitcallsCount += 1;
+          }
+
           // Check if the regularMarketPrice is greater than or equal to target1
-          if (regularMarketPrice >= stock.target3) {
+          if (stock.traget3_date != null && stock.traget3_date != "") {
             closedCount += 1;
 
             // Convert posting_date to Date object
             const postingDateParts = stock.posting_date.split('-');
             const postingDate = new Date(postingDateParts[2], postingDateParts[1] - 1, postingDateParts[0]);
-            if (stock.traget3_date != null || stock.traget3_date != "") {
+            
+            
+            
+            if (stock.traget3_date != null && stock.traget3_date != "") {
               const target3Parts = stock.traget3_date.split('-');
               const target3Date = new Date(target3Parts[2], target3Parts[1] - 1, target3Parts[0]);
 
@@ -826,13 +911,13 @@ const fetchHomeData = async (req, res) => {
               console.log("target3 " + totalProfit);
             }
 
-          } else if (regularMarketPrice >= stock.target2) {
+          } else if (stock.traget2_date != null && stock.traget2_date != "") {
             closedCount += 1;
 
             // Convert posting_date to Date object
             const postingDateParts = stock.posting_date.split('-');
             const postingDate = new Date(postingDateParts[2], postingDateParts[1] - 1, postingDateParts[0]);
-            if (stock.traget2_date != null || stock.traget2_date != "") {
+            if (stock.traget2_date != null && stock.traget2_date != "") {
               const target2Parts = stock.traget2_date.split('-');
               const target2Date = new Date(target2Parts[2], target2Parts[1] - 1, target2Parts[0]);
 
@@ -853,13 +938,15 @@ const fetchHomeData = async (req, res) => {
               console.log("target2 " + totalProfit);
             }
 
-          } else if (regularMarketPrice >= stock.traget1) {
+          } else if (stock.traget1_date != null && stock.traget1_date != "") {
             closedCount += 1;
 
             const postingDateParts = stock.posting_date.split('-');
             const postingDate = new Date(postingDateParts[2], postingDateParts[1] - 1, postingDateParts[0]);
+            console.log(postingDate);
+            console.log("postingDate");
 
-            if (stock.traget1_date != null || stock.traget1_date != "") {
+            if (stock.traget1_date != null && stock.traget1_date != "") {
               const target1Parts = stock.traget1_date.split('-');
               const target1Date = new Date(target1Parts[2], target1Parts[1] - 1, target1Parts[0]);
 
@@ -888,11 +975,6 @@ const fetchHomeData = async (req, res) => {
 
       // Avoid division by zero and calculate average days
       const srate = (profitcallsCount / closedCount);
-      console.log(srate);
-      console.log("srate");
-      
-      
-
       const tDays = closedCount > 0 ? (totalDays / closedCount) : 0;
       const tReturn = totalReturns / closedCount;
 
