@@ -379,9 +379,11 @@ const fetchStockbyID = async (req, res) => {
 
 const fetchActiveStocks = async (req, res) => {
   try {
-    // Fetch stocks from your database
-    const stocksList = await sequelize.query('SELECT * FROM stocks WHERE status = ?',
-      { replacements: ['0'], type: QueryTypes.SELECT });
+    // Fetch stocks from your database, ordered by the most recently added
+    const stocksList = await sequelize.query(
+      'SELECT * FROM stocks WHERE status = ? ORDER BY created_at DESC',
+      { replacements: ['0'], type: QueryTypes.SELECT }
+    );
 
     // Iterate over the stocksList and fetch market price and market time for each stock from Yahoo Finance
     const enrichedStocks = await Promise.all(stocksList.map(async (stock) => {
@@ -426,6 +428,7 @@ const fetchActiveStocks = async (req, res) => {
     });
   }
 };
+
 
 const fetchHomeStocks = async (req, res) => {
   try {
