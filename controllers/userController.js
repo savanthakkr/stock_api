@@ -592,12 +592,14 @@ const checkUserPlan = async (req, res) => {
       `SELECT * FROM subscription 
        WHERE user_id = ? 
        AND STR_TO_DATE(end_date, '%d-%m-%Y') > CURDATE() 
+       AND status = 0  -- Check if status is 0 (inactive)
        LIMIT 1`,
       {
         replacements: [user_id],
         type: QueryTypes.SELECT
       }
     );
+    
 
     if (existingPlan.length > 0) {
       return res.status(200).json({ error: false, message: 'Plan is active' });
@@ -609,6 +611,49 @@ const checkUserPlan = async (req, res) => {
     res.status(500).json({ error: true, message: 'Internal server error' });
   }
 };
+
+const updateUserPlanStatus = async (req, res) => {
+  try {
+    const { user_id } = req.body;
+
+    // Find the most recent active plan (where status is 0 and end_date is in the future)
+    const existingPlan = await sequelize.query(
+      `SELECT * FROM subscription 
+       WHERE user_id = ? 
+       AND STR_TO_DATE(end_date, '%d-%m-%Y') > CURDATE() 
+       AND status = 0  -- Check if status is 0 (inactive)
+       ORDER BY STR_TO_DATE(end_date, '%d-%m-%Y') DESC  -- Order by end_date to get the most recent active plan
+       LIMIT 1`,
+      {
+        replacements: [user_id],
+        type: QueryTypes.SELECT
+      }
+    );
+
+    if (existingPlan.length > 0) {
+      // Update the status of the most recent active plan to 1 (inactive)
+      const planId = existingPlan[0].id;  // Assuming there's an 'id' field for the plan
+
+      await sequelize.query(
+        `UPDATE subscription 
+         SET status = 1  -- Set status to 1 (inactive)
+         WHERE id = ?`, 
+        {
+          replacements: [planId],
+          type: QueryTypes.UPDATE
+        }
+      );
+
+      return res.status(200).json({ error: false, message: 'Plan status updated to inactive' });
+    } else {
+      return res.status(400).json({ error: true, message: 'No active plan found to update' });
+    }
+  } catch (error) {
+    console.error('Error updating plan status:', error);
+    res.status(500).json({ error: true, message: 'Internal server error' });
+  }
+};
+
 
 const fetchAllUserPlan = async (req, res) => {
   try {
@@ -631,10 +676,17 @@ const fetchAllUserPlan = async (req, res) => {
       const enrichedPlans = existingPlan.map((plan) => {
         const endDateParts = plan.end_date.split('-'); // Assuming end_date is in 'dd-MM-yyyy' format
         const formattedEndDate = new Date(`${endDateParts[2]}-${endDateParts[1]}-${endDateParts[0]}`);
-
-        // Check if the plan is active or inactive
-        const status = formattedEndDate >= currentDate ? 'active' : 'inactive';
-
+        
+        // Check if the plan is active or inactive based on end date
+        let status = formattedEndDate >= currentDate ? 'active' : 'inactive';
+        
+        // Override status if the fetched database status is 1
+        if (existingPlan.status === '1') {
+          status = 'inactive';
+        }else{
+          
+        }
+      
         // Add status to each plan object
         return {
           ...plan,
@@ -675,10 +727,17 @@ const fetchAllUserPlanActiveAndInactive = async (req, res) => {
       const enrichedPlans = existingPlan.map((plan) => {
         const endDateParts = plan.end_date.split('-'); // Assuming end_date is in 'dd-MM-yyyy' format
         const formattedEndDate = new Date(`${endDateParts[2]}-${endDateParts[1]}-${endDateParts[0]}`);
-
-        // Check if the plan is active or inactive
-        const status = formattedEndDate >= currentDate ? 'active' : 'inactive';
-
+        
+        // Check if the plan is active or inactive based on end date
+        let status = formattedEndDate >= currentDate ? 'active' : 'inactive';
+        
+        // Override status if the fetched database status is 1
+        if (existingPlan.status === '1') {
+          status = 'inactive';
+        }else{
+          
+        }
+      
         // Add status to each plan object
         return {
           ...plan,
@@ -1210,6 +1269,7 @@ module.exports = {
   buyPlan,
   checkUserPlan,
   fetchUserWallet,
+  updateUserPlanStatus,
   fetchAllUserPlan,
   fetchAllUserPlanActiveAndInactive,
   upstockLogin,
