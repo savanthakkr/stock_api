@@ -548,6 +548,7 @@ const buyPlan = async (req, res) => {
       `SELECT * FROM subscription 
        WHERE user_id = ? 
        AND STR_TO_DATE(end_date, '%d-%m-%Y') > CURDATE() 
+       AND status = 0  -- Check if status is 0 (inactive)
        LIMIT 1`,
       {
         replacements: [user_id],
