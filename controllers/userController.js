@@ -674,25 +674,34 @@ const fetchAllUserPlan = async (req, res) => {
 
       // Iterate over each plan and check if it's active or inactive based on the end_date
       const enrichedPlans = existingPlan.map((plan) => {
-        const endDateParts = plan.end_date.split('-'); // Assuming end_date is in 'dd-MM-yyyy' format
-        const formattedEndDate = new Date(`${endDateParts[2]}-${endDateParts[1]}-${endDateParts[0]}`);
+        // Split the 'end_date' assuming it's in 'dd-MM-yyyy' format
+        const endDateParts = plan.end_date.split('-');
         
-        // Check if the plan is active or inactive based on end date
-        let status = ""
+        // Check if the date is valid
+        let formattedEndDate;
+        try {
+          formattedEndDate = new Date(`${endDateParts[2]}-${endDateParts[1]}-${endDateParts[0]}`);
+        } catch (error) {
+          formattedEndDate = null;  // If the date format is invalid, set it to null
+        }
         
-        // Override status if the fetched database status is 1
-        if (existingPlan.status === '1') {
+        // Initialize status
+        let status = "";
+      
+        // Check if the plan status is '1' (inactive) or if the date is invalid
+        if (plan.status === '1' || formattedEndDate === null || formattedEndDate < currentDate) {
           status = 'inactive';
-        }else{
-          status = formattedEndDate >= currentDate ? 'active' : 'inactive';
+        } else {
+          status = 'active';
         }
       
-        // Add status to each plan object
+        // Return the enriched plan with the updated status
         return {
           ...plan,
           status
         };
       });
+      
 
       return res.status(200).json({ error: false, message: 'Data fetched successfully', UserPlan: enrichedPlans });
     } else {
@@ -725,25 +734,34 @@ const fetchAllUserPlanActiveAndInactive = async (req, res) => {
 
       // Iterate over each plan and check if it's active or inactive based on the end_date
       const enrichedPlans = existingPlan.map((plan) => {
-        const endDateParts = plan.end_date.split('-'); // Assuming end_date is in 'dd-MM-yyyy' format
-        const formattedEndDate = new Date(`${endDateParts[2]}-${endDateParts[1]}-${endDateParts[0]}`);
+        // Split the 'end_date' assuming it's in 'dd-MM-yyyy' format
+        const endDateParts = plan.end_date.split('-');
         
-        // Check if the plan is active or inactive based on end date
+        // Check if the date is valid
+        let formattedEndDate;
+        try {
+          formattedEndDate = new Date(`${endDateParts[2]}-${endDateParts[1]}-${endDateParts[0]}`);
+        } catch (error) {
+          formattedEndDate = null;  // If the date format is invalid, set it to null
+        }
+        
+        // Initialize status
         let status = "";
-        
-        // Override status if the fetched database status is 1
-        if (existingPlan.status === '1') {
+      
+        // Check if the plan status is '1' (inactive) or if the date is invalid
+        if (plan.status === '1' || formattedEndDate === null || formattedEndDate < currentDate) {
           status = 'inactive';
-        }else{
-          status = formattedEndDate >= currentDate ? 'active' : 'inactive';
+        } else {
+          status = 'active';
         }
       
-        // Add status to each plan object
+        // Return the enriched plan with the updated status
         return {
           ...plan,
           status
         };
       });
+      
 
       return res.status(200).json({ error: false, message: 'Data fetched successfully', UserPlanDetails: enrichedPlans });
     } else {
