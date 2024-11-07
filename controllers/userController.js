@@ -678,13 +678,13 @@ const fetchAllUserPlan = async (req, res) => {
         const formattedEndDate = new Date(`${endDateParts[2]}-${endDateParts[1]}-${endDateParts[0]}`);
         
         // Check if the plan is active or inactive based on end date
-        let status = formattedEndDate >= currentDate ? 'active' : 'inactive';
+        let status = ""
         
         // Override status if the fetched database status is 1
         if (existingPlan.status === '1') {
           status = 'inactive';
         }else{
-          
+          status = formattedEndDate >= currentDate ? 'active' : 'inactive';
         }
       
         // Add status to each plan object
@@ -729,13 +729,13 @@ const fetchAllUserPlanActiveAndInactive = async (req, res) => {
         const formattedEndDate = new Date(`${endDateParts[2]}-${endDateParts[1]}-${endDateParts[0]}`);
         
         // Check if the plan is active or inactive based on end date
-        let status = formattedEndDate >= currentDate ? 'active' : 'inactive';
+        let status = "";
         
         // Override status if the fetched database status is 1
         if (existingPlan.status === '1') {
           status = 'inactive';
         }else{
-          
+          status = formattedEndDate >= currentDate ? 'active' : 'inactive';
         }
       
         // Add status to each plan object
