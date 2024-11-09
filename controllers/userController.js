@@ -1055,7 +1055,7 @@ const fetchHomeData = async (req, res) => {
       }));
 
       // Avoid division by zero and calculate average days
-      const srate = (profitcallsCount / closedCount);
+      const srate = (profitcallsCount / closedCount) * 100;
       const tDays = closedCount > 0 ? (totalDays / closedCount) : 0;
       const tReturn = totalReturns / closedCount;
 
