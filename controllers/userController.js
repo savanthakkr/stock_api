@@ -434,8 +434,8 @@ const fetchHomeStocks = async (req, res) => {
   try {
     // Fetch stocks from your database
     const stocksList = await sequelize.query(
-      'SELECT * FROM stocks WHERE status = ?',
-      { replacements: ['0'], type: QueryTypes.SELECT }
+      'SELECT * FROM stocks',
+      { replacements: [], type: QueryTypes.SELECT }
     );
 
     // Iterate over the stocksList and fetch market price and market time for each stock from Yahoo Finance
@@ -496,8 +496,8 @@ const fetchHomeStocks = async (req, res) => {
           if (regularMarketPrice >= stock.target3) {
             if (!stock.traget3_date) {
               await sequelize.query(
-                'UPDATE stocks SET traget3_date = ? WHERE id = ?',
-                { replacements: [currentDate, stock.id], type: QueryTypes.UPDATE }
+                'UPDATE stocks SET traget3_date = ? , status = ? WHERE id = ?',
+                { replacements: [currentDate, '1', stock.id], type: QueryTypes.UPDATE }
               );
               updated = true;
             }
@@ -1058,6 +1058,16 @@ const fetchHomeData = async (req, res) => {
       const srate = (profitcallsCount / closedCount);
       const tDays = closedCount > 0 ? (totalDays / closedCount) : 0;
       const tReturn = totalReturns / closedCount;
+
+      console.log(closedCount);
+      console.log("closedCount");
+      console.log(srate);
+      console.log("srate");
+      
+      
+      console.log(profitcallsCount);
+      console.log("profitcallsCount");
+      
 
       const avgTotalProfit = totalProfit / closedCount;
       const avgDays = totalDays / closedCount;
