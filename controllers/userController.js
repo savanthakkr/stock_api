@@ -434,7 +434,7 @@ const fetchHomeStocks = async (req, res) => {
   try {
     // Fetch stocks from your database, ordering by latest first (assuming created_at exists)
     const stocksList = await sequelize.query(
-      'SELECT * FROM stocks ORDER BY created_at DESC',
+      'SELECT * FROM stocks ORDER BY updated_at DESC',
       { replacements: [], type: QueryTypes.SELECT }
     );
 
