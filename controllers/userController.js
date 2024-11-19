@@ -432,9 +432,9 @@ const fetchActiveStocks = async (req, res) => {
 
 const fetchHomeStocks = async (req, res) => {
   try {
-    // Fetch stocks from your database
+    // Fetch stocks from your database, ordering by latest first (assuming created_at exists)
     const stocksList = await sequelize.query(
-      'SELECT * FROM stocks',
+      'SELECT * FROM stocks ORDER BY created_at DESC',
       { replacements: [], type: QueryTypes.SELECT }
     );
 
@@ -460,61 +460,52 @@ const fetchHomeStocks = async (req, res) => {
 
         // Check if manual_exit is set to 1
         if (stock.manual_exit === "1") {
-          // Return stock data without checking targets
           return {
             ...stock,
             regularMarketPrice,
             regularMarketTime: formattedMarketDate
           };
         } else {
-          // Continue with target checks if manual_exit is not set to 1
           let updated = false;
 
           // Target 1 check
-          if (regularMarketPrice >= stock.traget1) {
-            if (!stock.traget1_date) {
-              await sequelize.query(
-                'UPDATE stocks SET traget1_date = ? WHERE id = ?',
-                { replacements: [currentDate, stock.id], type: QueryTypes.UPDATE }
-              );
-              updated = true;
-            }
+          if (regularMarketPrice >= stock.traget1 && !stock.traget1_date) {
+            await sequelize.query(
+              'UPDATE stocks SET traget1_date = ? WHERE id = ?',
+              { replacements: [currentDate, stock.id], type: QueryTypes.UPDATE }
+            );
+            updated = true;
           }
 
           // Target 2 check
-          if (regularMarketPrice >= stock.target2) {
-            if (!stock.traget2_date) {
-              await sequelize.query(
-                'UPDATE stocks SET traget2_date = ? WHERE id = ?',
-                { replacements: [currentDate, stock.id], type: QueryTypes.UPDATE }
-              );
-              updated = true;
-            }
+          if (regularMarketPrice >= stock.target2 && !stock.traget2_date) {
+            await sequelize.query(
+              'UPDATE stocks SET traget2_date = ? WHERE id = ?',
+              { replacements: [currentDate, stock.id], type: QueryTypes.UPDATE }
+            );
+            updated = true;
           }
 
           // Target 3 check
-          if (regularMarketPrice >= stock.target3) {
-            if (!stock.traget3_date) {
-              await sequelize.query(
-                'UPDATE stocks SET traget3_date = ? , status = ? WHERE id = ?',
-                { replacements: [currentDate, '1', stock.id], type: QueryTypes.UPDATE }
-              );
-              updated = true;
-            }
+          if (regularMarketPrice >= stock.target3 && !stock.traget3_date) {
+            await sequelize.query(
+              'UPDATE stocks SET traget3_date = ?, status = ? WHERE id = ?',
+              { replacements: [currentDate, '1', stock.id], type: QueryTypes.UPDATE }
+            );
+            updated = true;
           }
 
-          if (regularMarketPrice == stock.stop_loss) {
-            if (!stock.traget3_date) {
-              await sequelize.query(
-                'UPDATE stocks SET status = ? WHERE id = ?',
-                { replacements: ['1', stock.id], type: QueryTypes.UPDATE }
-              );
-              updated = true;
-            }
+          // Stop loss check
+          if (regularMarketPrice === stock.stop_loss && !stock.traget3_date) {
+            await sequelize.query(
+              'UPDATE stocks SET status = ? WHERE id = ?',
+              { replacements: ['1', stock.id], type: QueryTypes.UPDATE }
+            );
+            updated = true;
           }
 
           // Return stock data if any target is hit
-          if (stock.traget1_date != null || stock.traget2_date != null || stock.traget3_date != null) {
+          if (stock.traget1_date || stock.traget2_date || stock.traget3_date) {
             return {
               ...stock,
               regularMarketPrice,
@@ -533,6 +524,7 @@ const fetchHomeStocks = async (req, res) => {
     // Filter out any null values (stocks that don't meet the condition or where API failed)
     const filteredStocks = enrichedStocks.filter(stock => stock !== null);
 
+    // Return sorted filtered stocks
     return res.status(200).send({
       error: false,
       message: 'Fetch Successfully',
@@ -540,13 +532,14 @@ const fetchHomeStocks = async (req, res) => {
     });
 
   } catch (error) {
-    console.log(error);
+    console.error(error);
     return res.status(500).send({
       message: 'Data not found',
       error: true
     });
   }
 };
+
 
 
 const buyPlan = async (req, res) => {
