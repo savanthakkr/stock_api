@@ -503,6 +503,16 @@ const fetchHomeStocks = async (req, res) => {
             }
           }
 
+          if (regularMarketPrice == stock.stop_loss) {
+            if (!stock.traget3_date) {
+              await sequelize.query(
+                'UPDATE stocks SET status = ? WHERE id = ?',
+                { replacements: ['1', stock.id], type: QueryTypes.UPDATE }
+              );
+              updated = true;
+            }
+          }
+
           // Return stock data if any target is hit
           if (stock.traget1_date != null || stock.traget2_date != null || stock.traget3_date != null) {
             return {
