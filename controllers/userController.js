@@ -260,12 +260,12 @@ const addStock = async (req, res) => {
 
 const updateStock = async (req, res) => {
   try {
-    const { sid, cname, posting_date, type, cmp_type, point_cmp, down_upto, traget1, target2, target3, cmp, realtime_return, today_date, description } = req.body;
+    const { sid, cname, posting_date, type, cmp_type, point_cmp, down_upto, traget1, target2, target3, cmp, stop_loss,duartiont1,duartiont2,durationt3, today_date, description } = req.body;
 
     const result = await sequelize.query(
-      'UPDATE stocks SET cname = ?, posting_date = ?,type = ?, cmp_type = ?,point_cmp = ?,down_upto = ?,traget1 = ?,target2 = ?,target3 = ?,cmp = ?,realtime_return = ?,today_date = ?,description = ? WHERE id = ?',
+      'UPDATE stocks SET cname = ?, posting_date = ?,type = ?, cmp_type = ?,point_cmp = ?,down_upto = ?,traget1 = ?,target2 = ?,target3 = ?,cmp = ?,stop_loss = ?,duration_t1 = ?,	duration_t2	 = ?,duration_t3 = ?,today_date = ?,description = ? WHERE id = ?',
       {
-        replacements: [cname, posting_date, type, cmp_type, point_cmp, down_upto, traget1, target2, target3, cmp, realtime_return, today_date, description, sid],
+        replacements: [cname, posting_date, type, cmp_type, point_cmp, down_upto, traget1, target2, target3, cmp, stop_loss, today_date,duartiont1,duartiont2,durationt3, description, sid],
         type: QueryTypes.UPDATE
       }
     );
