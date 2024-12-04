@@ -209,6 +209,24 @@ const registerUser = async (req, res) => {
   }
 };
 
+const updateUserToken = async (req, res) => {
+  try {
+    const { token,userId } = req.body;
+
+    const result = await sequelize.query(
+      'UPDATE users SET token = ? WHERE id = ?',
+      {
+        replacements: [token,userId],
+        type: QueryTypes.UPDATE
+      }
+    );
+    res.status(200).json({ error: false, message: 'Token updated successfully' });
+  } catch (error) {
+    console.error('Error registering user:', error); // Log the error
+    res.status(500).json({ error: true, message: 'Internal server error' });
+  }
+};
+
 const fetchStockByName = async (req, res) => {
   try {
     // Fetch stocks from your database
@@ -1289,6 +1307,40 @@ const deleteStock = async (req, res) => {
   }
 };
 
+const getUserToken = async (req, res) => {
+  try {
+    // const userId = req.user.id;
+    const { userId } = req.body;
+    const users = await sequelize.query(
+      'SELECT token FROM users WHERE id = ?',
+      {
+        replacements: [userId],
+        type: QueryTypes.SELECT
+      }
+    );
+    res.status(200).json({ error: false, message: "User Token Fetch", UserToken: users });
+  } catch (error) {
+    console.error('Error fetching user profile:', error);
+    res.status(500).json({ messsage: 'Internal server error', error: true });
+  }
+};
+
+const getAllUserToken = async (req, res) => {
+  try {
+    const users = await sequelize.query(
+      'SELECT token FROM users',
+      {
+        replacements: [],
+        type: QueryTypes.SELECT
+      }
+    );
+    res.status(200).json({ error: false, message: "User Token Fetch", UserToken: users });
+  } catch (error) {
+    console.error('Error fetching user profile:', error);
+    res.status(500).json({ messsage: 'Internal server error', error: true });
+  }
+};
+
 module.exports = {
   checkMobileExist,
   registerUser,
@@ -1313,5 +1365,8 @@ module.exports = {
   fetchAllUsers,
   fetchStockByName,
   fetchStockbyID,
-  deleteStock
+  deleteStock,
+  updateUserToken,
+  getUserToken,
+  getAllUserToken
 };
