@@ -5,6 +5,7 @@ const jwt = require('jsonwebtoken');
 const verifyToken = require('../middlewares/authMiddleware');
 const fs = require('fs');
 const path = require('path');
+const admin = require('./firebase');
 
 const otpGenerator = require('otp-generator');
 const { broadcastMessage } = require('./soketController');
@@ -23,6 +24,8 @@ const storage = multer.diskStorage({
     cb(null, Date.now() + path.extname(file.originalname));
   }
 });
+
+
 
 const upload = multer({ storage: storage });
 const uploadMiddleware = upload.single('image');
@@ -456,6 +459,14 @@ const fetchHomeStocks = async (req, res) => {
       { replacements: [], type: QueryTypes.SELECT }
     );
 
+    const getAllUserTokens = async () => {
+      const tokens = await sequelize.query(
+        'SELECT token FROM users WHERE token IS NOT NULL',
+        { type: QueryTypes.SELECT }
+      );
+      return tokens.map((row) => row.token); // Map to extract `token` values
+    };
+
     // Iterate over the stocksList and fetch market price and market time for each stock from Yahoo Finance
     const enrichedStocks = await Promise.all(stocksList.map(async (stock) => {
       const yahooUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${stock.cname}`;
@@ -476,7 +487,8 @@ const fetchHomeStocks = async (req, res) => {
           timeZone: "Asia/Kolkata"
         }).format(new Date()).replace(/\//g, "-");
 
-        // Check if manual_exit is set to 1
+        const userTokens = await getAllUserTokens();
+
         if (stock.manual_exit === "1") {
           return {
             ...stock,
@@ -492,6 +504,24 @@ const fetchHomeStocks = async (req, res) => {
               'UPDATE stocks SET traget1_date = ? WHERE id = ?',
               { replacements: [currentDate, stock.id], type: QueryTypes.UPDATE }
             );
+            if (userTokens.length > 0) {
+              for (const token of userTokens) {
+                const message = {
+                  notification: {
+                    title: 'Short Term Target Reached',
+                    body: `The target price for ${stock.name} has been reached!`,
+                  },
+                  token, // Individual token
+                };
+            
+                try {
+                  await admin.messaging().send(message);
+                  console.log(`Notification sent to token: ${token}`);
+                } catch (error) {
+                  console.error(`Error sending notification to token: ${token}`, error);
+                }
+              }
+            }
             updated = true;
           }
 
@@ -501,6 +531,24 @@ const fetchHomeStocks = async (req, res) => {
               'UPDATE stocks SET traget2_date = ? WHERE id = ?',
               { replacements: [currentDate, stock.id], type: QueryTypes.UPDATE }
             );
+            if (userTokens.length > 0) {
+              for (const token of userTokens) {
+                const message = {
+                  notification: {
+                    title: 'Medium Term Target Reached',
+                    body: `The target price for ${stock.name} has been reached!`,
+                  },
+                  token, // Individual token
+                };
+            
+                try {
+                  await admin.messaging().send(message);
+                  console.log(`Notification sent to token: ${token}`);
+                } catch (error) {
+                  console.error(`Error sending notification to token: ${token}`, error);
+                }
+              }
+            }
             updated = true;
           }
 
@@ -510,6 +558,24 @@ const fetchHomeStocks = async (req, res) => {
               'UPDATE stocks SET traget3_date = ?, status = ? WHERE id = ?',
               { replacements: [currentDate, '1', stock.id], type: QueryTypes.UPDATE }
             );
+            if (userTokens.length > 0) {
+              for (const token of userTokens) {
+                const message = {
+                  notification: {
+                    title: 'Long Term Target Reached',
+                    body: `The target price for ${stock.name} has been reached!`,
+                  },
+                  token, // Individual token
+                };
+            
+                try {
+                  await admin.messaging().send(message);
+                  console.log(`Notification sent to token: ${token}`);
+                } catch (error) {
+                  console.error(`Error sending notification to token: ${token}`, error);
+                }
+              }
+            }
             updated = true;
           }
 
@@ -519,6 +585,24 @@ const fetchHomeStocks = async (req, res) => {
               'UPDATE stocks SET status = ? WHERE id = ?',
               { replacements: ['1', stock.id], type: QueryTypes.UPDATE }
             );
+            if (userTokens.length > 0) {
+              for (const token of userTokens) {
+                const message = {
+                  notification: {
+                    title: 'Stop Loss Target Reached',
+                    body: `The stop loss target price for ${stock.name} has been reached!`,
+                  },
+                  token, // Individual token
+                };
+            
+                try {
+                  await admin.messaging().send(message);
+                  console.log(`Notification sent to token: ${token}`);
+                } catch (error) {
+                  console.error(`Error sending notification to token: ${token}`, error);
+                }
+              }
+            }
             updated = true;
           }
 
@@ -557,8 +641,6 @@ const fetchHomeStocks = async (req, res) => {
     });
   }
 };
-
-
 
 const buyPlan = async (req, res) => {
   try {

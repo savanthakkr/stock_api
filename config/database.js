@@ -14,16 +14,16 @@ require('dotenv').config();
 //   dialect: 'mysql',
 // });
 
-const DB_NAME = 'stock_market';
-const DB_USER = 'root';
-const DB_PASSWORD = 'pAssW1@!1!!123';
-const DB_HOST = 'localhost';
-
-
 // const DB_NAME = 'stock_market';
 // const DB_USER = 'root';
-// const DB_PASSWORD = '';
+// const DB_PASSWORD = 'pAssW1@!1!!123';
 // const DB_HOST = 'localhost';
+
+
+const DB_NAME = 'stock_market';
+const DB_USER = 'root';
+const DB_PASSWORD = '';
+const DB_HOST = 'localhost';
 
 // Set up the Sequelize instance
 const sequelize = new Sequelize(DB_NAME, DB_USER, DB_PASSWORD, {
