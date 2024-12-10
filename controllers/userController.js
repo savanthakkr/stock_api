@@ -214,12 +214,12 @@ const registerUser = async (req, res) => {
 
 const updateUserToken = async (req, res) => {
   try {
-    const { token,userId } = req.body;
+    const { token, userId } = req.body;
 
     const result = await sequelize.query(
       'UPDATE users SET token = ? WHERE id = ?',
       {
-        replacements: [token,userId],
+        replacements: [token, userId],
         type: QueryTypes.UPDATE
       }
     );
@@ -281,12 +281,12 @@ const addStock = async (req, res) => {
 
 const updateStock = async (req, res) => {
   try {
-    const { sid, cname, posting_date, type, cmp_type, point_cmp, down_upto, traget1, target2, target3, cmp, stop_loss,duartiont1,duartiont2,durationt3, today_date, description } = req.body;
+    const { sid, cname, posting_date, type, cmp_type, point_cmp, down_upto, traget1, target2, target3, cmp, stop_loss, duartiont1, duartiont2, durationt3, today_date, description } = req.body;
 
     const result = await sequelize.query(
       'UPDATE stocks SET cname = ?, posting_date = ?,type = ?, cmp_type = ?,point_cmp = ?,down_upto = ?,traget1 = ?,target2 = ?,target3 = ?,cmp = ?,stop_loss = ?,duration_t1 = ?,	duration_t2	 = ?,duration_t3 = ?,today_date = ?,description = ? WHERE id = ?',
       {
-        replacements: [cname, posting_date, type, cmp_type, point_cmp, down_upto, traget1, target2, target3, cmp, stop_loss,duartiont1,duartiont2,durationt3, today_date, description, sid],
+        replacements: [cname, posting_date, type, cmp_type, point_cmp, down_upto, traget1, target2, target3, cmp, stop_loss, duartiont1, duartiont2, durationt3, today_date, description, sid],
         type: QueryTypes.UPDATE
       }
     );
@@ -304,7 +304,7 @@ const fetchAllStocks = async (req, res) => {
       `SELECT * FROM stocks ORDER BY STR_TO_DATE(posting_date, '%d-%m-%Y') DESC`,
       { replacements: [], type: QueryTypes.SELECT }
     );
-    
+
 
     // Iterate over the stocksList and fetch market price and market time for each stock from Yahoo Finance
     const enrichedStocks = await Promise.all(stocksList.map(async (stock) => {
@@ -405,7 +405,7 @@ const fetchActiveStocks = async (req, res) => {
   try {
     // Fetch stocks from your database, ordered by the most recently added
     const stocksList = await sequelize.query(
-      'SELECT * FROM stocks WHERE status = ? ORDER BY created_at DESC',
+      `SELECT * FROM stocks WHERE status = ? ORDER BY STR_TO_DATE(posting_date, '%d-%m-%Y') DESC`,
       { replacements: ['0'], type: QueryTypes.SELECT }
     );
 
@@ -516,7 +516,7 @@ const fetchHomeStocks = async (req, res) => {
                   },
                   token, // Individual token
                 };
-            
+
                 try {
                   await admin.messaging().send(message);
                   console.log(`Notification sent to token: ${token}`);
@@ -543,7 +543,7 @@ const fetchHomeStocks = async (req, res) => {
                   },
                   token, // Individual token
                 };
-            
+
                 try {
                   await admin.messaging().send(message);
                   console.log(`Notification sent to token: ${token}`);
@@ -570,7 +570,7 @@ const fetchHomeStocks = async (req, res) => {
                   },
                   token, // Individual token
                 };
-            
+
                 try {
                   await admin.messaging().send(message);
                   console.log(`Notification sent to token: ${token}`);
@@ -597,7 +597,7 @@ const fetchHomeStocks = async (req, res) => {
                   },
                   token, // Individual token
                 };
-            
+
                 try {
                   await admin.messaging().send(message);
                   console.log(`Notification sent to token: ${token}`);
@@ -706,7 +706,7 @@ const checkUserPlan = async (req, res) => {
         type: QueryTypes.SELECT
       }
     );
-    
+
 
     if (existingPlan.length > 0) {
       return res.status(200).json({ error: false, message: 'Plan is active' });
@@ -744,7 +744,7 @@ const updateUserPlanStatus = async (req, res) => {
       await sequelize.query(
         `UPDATE subscription 
          SET status = 1  -- Set status to 1 (inactive)
-         WHERE id = ?`, 
+         WHERE id = ?`,
         {
           replacements: [planId],
           type: QueryTypes.UPDATE
@@ -783,7 +783,7 @@ const fetchAllUserPlan = async (req, res) => {
       const enrichedPlans = existingPlan.map((plan) => {
         // Split the 'end_date' assuming it's in 'dd-MM-yyyy' format
         const endDateParts = plan.end_date.split('-');
-        
+
         // Check if the date is valid
         let formattedEndDate;
         try {
@@ -791,24 +791,24 @@ const fetchAllUserPlan = async (req, res) => {
         } catch (error) {
           formattedEndDate = null;  // If the date format is invalid, set it to null
         }
-        
+
         // Initialize status
         let status = "";
-      
+
         // Check if the plan status is '1' (inactive) or if the date is invalid
         if (plan.status === '1' || formattedEndDate === null || formattedEndDate < currentDate) {
           status = 'inactive';
         } else {
           status = 'active';
         }
-      
+
         // Return the enriched plan with the updated status
         return {
           ...plan,
           status
         };
       });
-      
+
 
       return res.status(200).json({ error: false, message: 'Data fetched successfully', UserPlan: enrichedPlans });
     } else {
@@ -843,7 +843,7 @@ const fetchAllUserPlanActiveAndInactive = async (req, res) => {
       const enrichedPlans = existingPlan.map((plan) => {
         // Split the 'end_date' assuming it's in 'dd-MM-yyyy' format
         const endDateParts = plan.end_date.split('-');
-        
+
         // Check if the date is valid
         let formattedEndDate;
         try {
@@ -851,24 +851,24 @@ const fetchAllUserPlanActiveAndInactive = async (req, res) => {
         } catch (error) {
           formattedEndDate = null;  // If the date format is invalid, set it to null
         }
-        
+
         // Initialize status
         let status = "";
-      
+
         // Check if the plan status is '1' (inactive) or if the date is invalid
         if (plan.status === '1' || formattedEndDate === null || formattedEndDate < currentDate) {
           status = 'inactive';
         } else {
           status = 'active';
         }
-      
+
         // Return the enriched plan with the updated status
         return {
           ...plan,
           status
         };
       });
-      
+
 
       return res.status(200).json({ error: false, message: 'Data fetched successfully', UserPlanDetails: enrichedPlans });
     } else {
@@ -968,7 +968,7 @@ const fetchHomeData1 = async (req, res) => {
           const postingDate = new Date(postingDateParts[2], postingDateParts[1] - 1, postingDateParts[0]);
           console.log(postingDate);
           console.log("traget1_date");
-          
+
 
 
           const differenceTarget = Number(stock.traget1) - avgPrice;
@@ -1048,7 +1048,7 @@ const fetchHomeData = async (req, res) => {
           // const postingDate = new Date(postingDateParts[2], postingDateParts[1] - 1, postingDateParts[0]);
           // console.log(postingDate);
           // console.log("traget1_date");
-          
+
 
 
           const differenceTarget = Number(stock.traget1) - avgPrice;
@@ -1072,9 +1072,9 @@ const fetchHomeData = async (req, res) => {
             // Convert posting_date to Date object
             const postingDateParts = stock.posting_date.split('-');
             const postingDate = new Date(postingDateParts[2], postingDateParts[1] - 1, postingDateParts[0]);
-            
-            
-            
+
+
+
             if (stock.traget3_date != null && stock.traget3_date != "") {
               const target3Parts = stock.traget3_date.split('-');
               const target3Date = new Date(target3Parts[2], target3Parts[1] - 1, target3Parts[0]);
@@ -1169,11 +1169,11 @@ const fetchHomeData = async (req, res) => {
       console.log("closedCount");
       console.log(srate);
       console.log("srate");
-      
-      
+
+
       console.log(profitcallsCount);
       console.log("profitcallsCount");
-      
+
 
       const avgTotalProfit = totalProfit / closedCount;
       const avgDays = totalDays / closedCount;
