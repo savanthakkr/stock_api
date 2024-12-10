@@ -1413,12 +1413,12 @@ const getAllUserToken = async (req, res) => {
       `
       SELECT users.token, 
              CASE 
-               WHEN subscriptions.status = 0 THEN true
+               WHEN subscription.status = 0 THEN true
                ELSE false
              END AS isPlanActive
       FROM users
-      LEFT JOIN subscriptions 
-      ON users.id = subscriptions.user_id
+      LEFT JOIN subscription 
+      ON users.id = subscription.user_id
       `,
       {
         replacements: [],
