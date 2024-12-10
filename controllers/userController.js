@@ -300,8 +300,10 @@ const updateStock = async (req, res) => {
 const fetchAllStocks = async (req, res) => {
   try {
     // Fetch stocks from your database
-    const stocksList = await sequelize.query('SELECT * FROM stocks',
-      { replacements: [], type: QueryTypes.SELECT });
+    const stocksList = await sequelize.query(
+      'SELECT * FROM stocks ORDER BY id DESC', // Replace 'id' with your column name
+      { replacements: [], type: QueryTypes.SELECT }
+    );
 
     // Iterate over the stocksList and fetch market price and market time for each stock from Yahoo Finance
     const enrichedStocks = await Promise.all(stocksList.map(async (stock) => {
