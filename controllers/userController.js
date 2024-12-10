@@ -509,7 +509,7 @@ const fetchHomeStocks = async (req, res) => {
                 const message = {
                   notification: {
                     title: 'Short Term Target Reached',
-                    body: `The target price for ${stock.name} has been reached!`,
+                    body: `The target price for ${stock.cname} has been reached!`,
                   },
                   token, // Individual token
                 };
@@ -536,7 +536,7 @@ const fetchHomeStocks = async (req, res) => {
                 const message = {
                   notification: {
                     title: 'Medium Term Target Reached',
-                    body: `The target price for ${stock.name} has been reached!`,
+                    body: `The target price for ${stock.cname} has been reached!`,
                   },
                   token, // Individual token
                 };
@@ -563,7 +563,7 @@ const fetchHomeStocks = async (req, res) => {
                 const message = {
                   notification: {
                     title: 'Long Term Target Reached',
-                    body: `The target price for ${stock.name} has been reached!`,
+                    body: `The target price for ${stock.cname} has been reached!`,
                   },
                   token, // Individual token
                 };
@@ -590,7 +590,7 @@ const fetchHomeStocks = async (req, res) => {
                 const message = {
                   notification: {
                     title: 'Stop Loss Target Reached',
-                    body: `The stop loss target price for ${stock.name} has been reached!`,
+                    body: `The stop loss target price for ${stock.cname} has been reached!`,
                   },
                   token, // Individual token
                 };
@@ -1410,18 +1410,36 @@ const getUserToken = async (req, res) => {
 const getAllUserToken = async (req, res) => {
   try {
     const users = await sequelize.query(
-      'SELECT token FROM users',
+      `
+      SELECT users.token, 
+             CASE 
+               WHEN subscriptions.status = 0 THEN true
+               ELSE false
+             END AS isPlanActive
+      FROM users
+      LEFT JOIN subscriptions 
+      ON users.id = subscriptions.user_id
+      `,
       {
         replacements: [],
-        type: QueryTypes.SELECT
+        type: QueryTypes.SELECT,
       }
     );
-    res.status(200).json({ error: false, message: "User Token Fetch", UserToken: users });
+
+    res.status(200).json({
+      error: false,
+      message: "User Token Fetch",
+      UserToken: users,
+    });
   } catch (error) {
-    console.error('Error fetching user profile:', error);
-    res.status(500).json({ messsage: 'Internal server error', error: true });
+    console.error("Error fetching user profile:", error);
+    res.status(500).json({
+      message: "Internal server error",
+      error: true,
+    });
   }
 };
+
 
 module.exports = {
   checkMobileExist,
