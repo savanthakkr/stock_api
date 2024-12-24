@@ -263,21 +263,28 @@ const fetchStockByName = async (req, res) => {
 
 const addStock = async (req, res) => {
   try {
-    const { cname, posting_date, type, cmp_type, point_cmp, down_upto, traget1, target2, target3, cmp, realtime_return, duration_t2, duration_t3, stop_loss, today_date, description } = req.body;
+    let { cname, posting_date, type, cmp_type, point_cmp, down_upto, traget1, target2, target3, cmp, realtime_return, duration_t2, duration_t3, stop_loss, today_date, description } = req.body;
+
+    // Transform cname from '.NS' to 'BO' if necessary
+    if (cname && cname.endsWith('.NS')) {
+      cname = cname.replace('.NS', 'BO');
+    }
 
     const result = await sequelize.query(
-      'INSERT INTO stocks (cname, posting_date,type, cmp_type,point_cmp,down_upto,traget1,target2,target3,cmp,duration_t1,duration_t2,duration_t3,stop_loss,today_date,description) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      'INSERT INTO stocks (cname, posting_date, type, cmp_type, point_cmp, down_upto, traget1, target2, target3, cmp, duration_t1, duration_t2, duration_t3, stop_loss, today_date, description) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
       {
         replacements: [cname, posting_date, type, cmp_type, point_cmp, down_upto, traget1, target2, target3, cmp, realtime_return, duration_t2, duration_t3, stop_loss, today_date, description],
-        type: QueryTypes.INSERT
+        type: QueryTypes.INSERT,
       }
     );
+
     res.status(200).json({ error: false, message: 'Data added successfully' });
   } catch (error) {
     console.error('Error registering user:', error); // Log the error
     res.status(500).json({ error: true, message: 'Internal server error' });
   }
 };
+
 
 const updateStock = async (req, res) => {
   try {
